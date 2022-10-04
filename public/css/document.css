@@ -1,0 +1,176 @@
+@page {
+    margin-left: 1em;
+}
+
+body {
+    font-family: 'sans-serif';
+    color: black;
+    font-size: 1.0em;
+    margin: 0px;
+}
+
+.caption {
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+a {
+    color: #fff;
+    text-decoration: none;
+}
+
+table {
+    font-size: 0.75em;
+}
+
+tfoot tr td {
+    font-weight: bold;
+    font-size: 0.75em;
+}
+
+pre {
+    font-size: 12px;
+    line-height: 1.6;
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
+.invoice table td,
+tr,
+th {
+    margin: 15px;
+    padding: 5px;
+    border: 1px solid black
+}
+
+.invoice h3 {
+    margin-left: 15px;
+    font-size: 0.75em;
+}
+
+.information {
+    /*background-color: #60A7A6;*/
+    color: #333;
+    font-size: 0.75em;
+}
+
+.information .logo {
+    margin: 5px;
+}
+
+.information table {
+    padding: 5px;
+    word-break: break-all;
+}
+
+.table-detail {
+    border-collapse: collapse;
+}
+
+.table-detail tr td,
+th {
+    padding: 5px;
+    border: none;
+}
+
+.table-detail th {
+    background-color: #f0f0f0;
+    border-collapse: collapse;
+}
+
+p {
+    margin: 0px;
+}
+
+.table-sign {
+    border: 1px solid #f0f0f0;
+    border-collapse: collapse;
+}
+
+.table-sign td,
+tr,
+th {
+    padding: 5px;
+}
+
+.table-sign th {
+    background-color: #f0f0f0;
+    font-size:1em;
+    font-weight: bold;
+}
+
+.header {
+    margin:1.2em 0em 0em 0em;
+}
+
+.content {
+    margin:0.8em 0em;
+}
+
+.content-table {
+    font-family: 'sans-serif';
+    color: #232323;
+    border-collapse: collapse;
+    border: 1px solid #333;
+}
+
+.content-table th {
+    border : 1px solid #333;
+    padding: 0.4em 0.4em;
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+.content-table td {
+    border-left: 1px solid #333;
+    border-right: 1px solid #333;
+    padding: 0.4em 0.4em;
+    word-wrap:break-word;
+    vertical-align:top;
+}
+
+.footer {
+    margin: 0.8em 0em;
+}
+
+.sign {
+    font-family: 'sans-serif';
+    color: #232323;
+    border-collapse: collapse;
+    font-size: 0.75em;
+}
+
+.sign th {
+    padding: 0.4em 0.4em;
+    font-weight: bold;
+    border : 1px solid #333;
+}
+
+.sign td {
+    padding: 0.4em 0.4em;
+    border : 1px solid #333;
+    text-align:center;
+    vertical-align:bottom;
+}
+
+.none {
+    font-family: sans-serif;
+    color: #232323;
+    line-height: 0.8em;
+}
+
+.none th {
+    padding:5px 5px;
+    font-weight: bold;
+    line-height: 1m;
+}
+
+.none td {
+    padding:5px 2px;
+    text-align:left;
+    vertical-align:top;
+    line-height: 1em;
+}
+
+
+

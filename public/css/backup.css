@@ -1,0 +1,97 @@
+
+a {
+    color: #fff;
+    text-decoration: none;
+}
+
+table {
+    font-size: x-small;
+}
+
+tfoot tr td {
+    font-weight: bold;
+    font-size: x-small;
+}
+
+pre {
+    font-size: 12px;
+    line-height: 1.6;
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
+.invoice table td,
+tr,
+th {
+    margin: 15px;
+    padding: 5px;
+    border: 0.5px solid black
+}
+
+.invoice h3 {
+    margin-left: 15px;
+    font-size: 14px;
+}
+
+.information {
+    /*background-color: #60A7A6;*/
+    color: #333;
+    font-size: 14px;
+}
+
+.information .logo {
+    margin: 5px;
+}
+
+.information table {
+    padding: 5px;
+    word-break: break-all;
+}
+
+body {
+    font-family: 'Verdana', 'Arial', 'sans-serif', 'Calibri';
+    color: #333;
+    font-size: 10px;
+    margin: 0px;
+}
+
+.caption {
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+.table-detail {
+    border-collapse: collapse;
+}
+
+.table-detail tr td,
+th {
+    padding: 5px;
+    border: none;
+}
+
+.table-detail th {
+    background-color: #f0f0f0;
+    border-collapse: collapse;
+}
+
+p {
+    margin: 0px;
+}
+
+.table-sign {
+    border: 0.5px solid #f0f0f0;
+    border-collapse: collapse;
+}
+
+.table-sign td,
+tr,
+th {
+    padding: 5px;
+}
+
+.table-sign th {
+    background-color: #f0f0f0;
+    font-size:12px;
+    font-weight: bold;
+}
