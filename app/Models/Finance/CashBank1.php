@@ -16,7 +16,6 @@ class CashBank1 extends Model
     protected $casts = [
         'is_ge'=>'string',
         'is_posted'=>'string',
-        'is_void'=>'string',
         'amount'=>'float',
         'no_jurnal'=>'int'
     ];
