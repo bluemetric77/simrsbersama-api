@@ -14,15 +14,8 @@ class Kernel extends ConsoleKernel
      * 
      * @return void
      */
-    protected $commands = [
-        'App\Console\GPS\GPSTotalKilat',
-        'App\Console\GPS\GPSEasyGo'
-    ];
-
     protected function schedule(Schedule $schedule)
     {
-        //$schedule->command('gpstotalkilat:sync')->everyMinute();
-        $schedule->command('gpseasygo:sync')->everyMinute();
     }
 
     /**
