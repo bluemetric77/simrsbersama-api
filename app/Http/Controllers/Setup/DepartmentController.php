@@ -24,11 +24,11 @@ class DepartmentController extends Controller
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {
-                $q->where('dept_code', 'like', $filter);
-                $q->orwhere('dept_name', 'like', $filter);
+                $q->where('dept_code', 'ilike', $filter);
+                $q->orwhere('dept_name', 'ilike', $filter);
             });
         }
-        $data = $data->orderBy($sortBy, 'desc')->paginate($limit);
+        $data = $data->orderBy($sortBy, ($descending) ? 'desc':'asc')->paginate($limit);
         return response()->success('Success', $data);
     }
 

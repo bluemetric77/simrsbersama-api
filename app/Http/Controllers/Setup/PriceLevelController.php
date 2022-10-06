@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers\Setup;
 
-use App\Models\Setup\ServiceClass;
+use App\Models\Setup\PriceLevel;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use PagesHelp;
 
-class ServiceClassController extends Controller
+class PriceLevelController extends Controller
 {
     public function index(Request $request)
     {
@@ -17,14 +17,12 @@ class ServiceClassController extends Controller
         $limit = isset($request->limit) ? $request->limit : 100;
         $descending = $request->descending == "true";
         $sortBy = $request->sortBy;
-        $data=ServiceClass::selectRaw("sysid,price_code,descriptions,sort_name,is_base_price,is_price_class,is_service_class,
-        is_pharmacy_class,is_bpjs_class,factor_inpatient,factor_service,factor_pharmacy,minimum_deposit,update_userid,create_date,
-        update_date");
+        $data=PriceLevel::selectRaw("sysid,level_code,descriptions,is_active,update_userid,create_date,update_date");
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {
-                $q->where('descriptions', 'ilike', $filter);
-                $q->orwhere('sort_name', 'ilike', $filter);
+                $q->where('level_code', 'ilike', $filter);
+                $q->orwhere('descriptions', 'ilike', $filter);
             });
         }
         $data = $data->orderBy($sortBy, ($descending) ? 'desc':'asc')->paginate($limit);
@@ -33,11 +31,11 @@ class ServiceClassController extends Controller
 
     public function destroy(Request $request){
         $sysid=isset($request->sysid) ? $request->sysid :'-1';
-        $data=ServiceClass::find($sysid);
+        $data=PriceLevel::find($sysid);
         if ($data) {
             DB::beginTransaction();
             try{
-                PagesHelp::write_log($request,$data->sysid,$data->price_code,'Deleting recods');
+                PagesHelp::write_log($request,$data->sysid,$data->dept_code,'Deleting recods');
                 $data->delete();
                 DB::commit();
                 return response()->success('Success','Hapus data berhasil');
@@ -53,10 +51,8 @@ class ServiceClassController extends Controller
 
     public function edit(Request $request){
         $sysid=isset($request->sysid) ? $request->sysid :'-1';
-        $data=ServiceClass::
-        selectRaw("sysid,price_code,descriptions,sort_name,is_base_price,is_price_class,is_service_class,
-                  is_pharmacy_class,is_bpjs_class,factor_inpatient,factor_service,factor_pharmacy,minimum_deposit")
-        ->where('sysid',$sysid)->first();
+        $data=PriceLevel::selectRaw("sysid,level_code,descriptions,is_active")
+        ->where('a.sysid',$sysid)->first();
         return response()->success('Success',$data);
     }
 
@@ -66,11 +62,11 @@ class ServiceClassController extends Controller
         $opr = $info['operation'];
         $validator=Validator::make($row,
         [
-            'price_code'=>'bail|required',
+            'level_code'=>'bail|required',
             'descriptions'=>'bail|required',
         ],[
-            'price_code.required'=>'Kode kelas diisi',
-            'descriptions.required'=>'Nama kelas diisi',
+            'level_code.required'=>'Level tarif harus diisi',
+            'descriptions.required'=>'Nama level tarif harud  diisi',
         ]);
         if ($validator->fails()) {
             return response()->error('',501,$validator->errors()->first());
@@ -78,25 +74,16 @@ class ServiceClassController extends Controller
         DB::beginTransaction();
         try {
             if ($opr=='inserted'){
-                $data = new ServiceClass();
+                $data = new PriceLevel();
             } else if ($opr=='updated'){
-                $data = ServiceClass::find($row['sysid']);
+                $data = PriceLevel::find($row['sysid']);
             }
-            $data->price_code=$row['price_code'];
+            $data->level_code=$row['level_code'];
             $data->descriptions=$row['descriptions'];
-            $data->sort_name=$row['sort_name'];
-            $data->is_base_price=$row['is_base_price'];
-            $data->is_price_class=$row['is_price_class'];
-            $data->is_service_class=$row['is_service_class'];
-            $data->is_pharmacy_class=$row['is_pharmacy_class'];
-            $data->is_bpjs_class=$row['is_bpjs_class'];
-            $data->factor_inpatient=$row['factor_inpatient'];
-            $data->factor_service=$row['factor_service'];
-            $data->factor_pharmacy=$row['factor_pharmacy'];
-            $data->minimum_deposit=$row['minimum_deposit'];
+            $data->is_active=$row['is_active'];
             $data->update_userid=PagesHelp::UserID($request);
             $data->save();
-            PagesHelp::write_log($request,$data->sysid,$data->price_code,'Add/Update recods');
+            PagesHelp::write_log($request,$data->sysid,$data->dept_code,'Add/Update recods');
             DB::commit();
             return response()->success('Success','Simpan data berhasil');
         } catch(Exception $error) {

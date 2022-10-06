@@ -48,6 +48,23 @@ Route::group(['prefix' => 'setup','middleware'=>'appauth'], function () {
         Route::delete('/department', 'destroy');
         Route::post('/department', 'store');
     });
+    Route::controller(\Setup\PriceLevelController::class)->group(function () {
+        Route::get('/pricelevel', 'index');
+        Route::get('/pricelevel/get', 'edit');
+        Route::delete('/pricelevel', 'destroy');
+        Route::post('/pricelevel', 'store');
+    });
+});
+Route::group(['prefix' => 'master','middleware'=>'appauth'], function () {
+    Route::group(['prefix' => 'inventory'], function () {
+        Route::controller(\Master\Inventory\WarehouseController::class)->group(function () {
+            Route::get('/warehouse', 'index');
+            Route::get('/warehouse/get', 'edit');
+            Route::delete('/warehouse', 'destroy');
+            Route::post('/warehouse', 'store');
+        });
+    });
+
 });
 
 Route::group(['prefix' => 'user', 'as' => 'master','middleware'=>'appauth'], function () {
@@ -83,13 +100,6 @@ Route::group(['prefix' => 'master', 'as' => 'master','middleware'=>'appauth'], f
     Route::delete('/inventory/items', 'Master\ItemsController@delete');
     Route::get('/inventory/items/get', 'Master\ItemsController@get');
     Route::get('/inventory/items/open', 'Master\ItemsController@open');
-
-    Route::get('/inventory/warehouse', 'Master\WarehouseController@index');
-    Route::post('/inventory/warehouse', 'Master\WarehouseController@post');
-    Route::delete('/inventory/warehouse', 'Master\WarehouseController@delete');
-    Route::get('/inventory/warehouse/get', 'Master\WarehouseController@get');
-    Route::get('/inventory/warehouse/list', 'Master\WarehouseController@getlist');
-
 
     Route::get('/partner/partner', 'Master\PartnerController@index');
     Route::post('/partner/partner', 'Master\PartnerController@post');

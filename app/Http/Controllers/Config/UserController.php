@@ -30,9 +30,9 @@ class UserController extends Controller
         if (!($filter=='')){
             $filter='%'.trim($filter).'%';
             $data=$data->where(function($q) use ($filter) {
-                    $q->where('user_name','like',$filter)
-                    ->orwhere('full_name','like',$filter)
-                    ->orwhere('email','like',$filter);
+                    $q->where('user_name','ilike',$filter)
+                    ->orwhere('full_name','ilike',$filter)
+                    ->orwhere('email','ilike',$filter);
             });
         }
         if (!($user->user_level=='ADMIN')){
