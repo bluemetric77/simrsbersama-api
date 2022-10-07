@@ -103,4 +103,32 @@ class ServiceClassController extends Controller
             DB::rollback();    
         }    
     }
+
+    public function open(Request $request)
+    {
+        $filter = $request->filter;
+        $limit = isset($request->limit) ? $request->limit : 100;
+        $descending = $request->descending == "true";
+        $sortBy = $request->sortBy;
+        $models = isset($request->models) ? $request->models : 'SERVICE'; 
+        $data=ServiceClass::selectRaw("sysid,price_code,descriptions,sort_name");
+        if ($models=='SERVICE') {
+            $data=$data->where('is_price_class',true);
+        } else if ($models=='INPATIENT') {
+            $data=$data->where('is_service_class',true);
+        } else if ($models=='INPATIENT') {
+            $data=$data->where('is_pharmacy_class',true);
+        } else if ($models=='BPJS') {
+            $data=$data->where('is_bpjs_class',true);
+        }
+        if (!($filter == '')) {
+            $filter = '%' . trim($filter) . '%';
+            $data = $data->where(function ($q) use ($filter) {
+                $q->where('descriptions', 'ilike', $filter);
+                $q->orwhere('sort_name', 'ilike', $filter);
+            });
+        }
+        $data = $data->orderBy($sortBy, ($descending) ? 'desc':'asc')->paginate($limit);
+        return response()->success('Success', $data);
+    }
 }

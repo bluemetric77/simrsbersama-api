@@ -41,6 +41,7 @@ Route::group(['prefix' => 'setup','middleware'=>'appauth'], function () {
         Route::get('/class/get', 'edit');
         Route::delete('/class', 'destroy');
         Route::post('/class', 'store');
+        Route::get('/class/open', 'open');
     });
     Route::controller(\Setup\DepartmentController::class)->group(function () {
         Route::get('/department', 'index');
@@ -54,7 +55,14 @@ Route::group(['prefix' => 'setup','middleware'=>'appauth'], function () {
         Route::delete('/pricelevel', 'destroy');
         Route::post('/pricelevel', 'store');
     });
+    Route::controller(\Setup\ParamedicController::class)->group(function () {
+        Route::get('/paramedic', 'index');
+        Route::get('/paramedic/get', 'edit');
+        Route::delete('/paramedic', 'destroy');
+        Route::post('/paramedic', 'store');
+    });
 });
+
 Route::group(['prefix' => 'master','middleware'=>'appauth'], function () {
     Route::group(['prefix' => 'inventory'], function () {
         Route::controller(\Master\Inventory\WarehouseController::class)->group(function () {

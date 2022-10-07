@@ -18,8 +18,7 @@ class WarehouseController extends Controller
         $descending = $request->descending == "true";
         $sortBy = $request->sortBy;
         $group_name=isset($request->group_name) ? $request->group_name : 'MEDICAL';
-        $is_active=isset($is_active) ? $is_active : 'false';
-        $is_active = ($is_active == 'true') ? true : false;
+        $is_active=isset($request->is_active) ? $request->is_active : false;
         if ($is_active==true) {
             $data=Warehouse::selectRaw("sysid,loc_code,location_name,is_received,is_sales,is_distribution")
             ->where('warehouse_group',$group_name)

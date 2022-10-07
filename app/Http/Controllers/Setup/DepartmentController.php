@@ -18,17 +18,33 @@ class DepartmentController extends Controller
         $descending = $request->descending == "true";
         $sortBy = $request->sortBy;
         $group_name=isset($request->group_name) ? $request->group_name : 'OUTPATIENT';
-        $data=Department::selectRaw("sysid,dept_code,dept_name,sort_name,wh_medical,wh_general,wh_pharmacy,price_class,
-        is_active,update_userid,create_date,update_date")
-        ->where('dept_group',$group_name);
+        $is_active=isset($request->is_active) ? $request->is_active : false;
+        if ($is_active==true) {
+            $data=Department::from('m_department as a')
+            ->selectRaw("a.sysid,a.dept_code,a.dept_name")
+            ->where('a.dept_group',$group_name)
+            ->where('a.is_active',true);
+        } else {
+            $data=Department::from('m_department as a')
+            ->selectRaw("a.sysid,a.dept_code,a.dept_name,a.sort_name,a.is_executive,a.wh_medical,a.wh_general,a.wh_pharmacy,a.price_class,
+                a.is_active,a.update_userid,a.create_date,a.update_date,
+                b.loc_code as wh_medical_code,c.loc_code as wh_general_code,d.descriptions as price_class_name,
+                e.dept_code as dept_code_pharmacy")
+            ->leftjoin('m_warehouse as b','a.wh_medical','=','b.sysid')
+            ->leftjoin('m_warehouse as c','a.wh_general','=','c.sysid')
+            ->leftjoin('m_class as d','a.price_class','=','d.sysid')
+            ->leftjoin('m_department as e','a.wh_pharmacy','=','e.sysid')
+            ->where('a.dept_group',$group_name);
+
+        }
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {
-                $q->where('dept_code', 'ilike', $filter);
-                $q->orwhere('dept_name', 'ilike', $filter);
+                $q->where('a.dept_code', 'ilike', $filter);
+                $q->orwhere('a.dept_name', 'ilike', $filter);
             });
         }
-        $data = $data->orderBy($sortBy, ($descending) ? 'desc':'asc')->paginate($limit);
+        $data = $data->orderBy('a.'.$sortBy, ($descending) ? 'desc':'asc')->paginate($limit);
         return response()->success('Success', $data);
     }
 
@@ -55,8 +71,13 @@ class DepartmentController extends Controller
     public function edit(Request $request){
         $sysid=isset($request->sysid) ? $request->sysid :'-1';
         $data=Department::from('m_department as a')
-        ->selectRaw("a.sysid,a.dept_code,a.dept_name,a.sort_name,a.wh_medical,a.wh_general,a.wh_pharmacy,a.price_class,
-        a.is_active,a.update_userid,a.create_date,a.update_date")
+            ->selectRaw("a.sysid,a.dept_code,a.dept_name,a.sort_name,a.is_executive,a.wh_medical,a.wh_general,a.wh_pharmacy,a.price_class,
+                a.is_active,CONCAT(b.loc_code,' - ',c.location_name) as wh_medical_name,CONCAT(c.loc_code,' - ',c.location_name) as wh_general_name,
+                CONCAT(d.price_code,' - ',d.descriptions) as price_class_name,CONCAT(e.dept_code,' - ',e.dept_name) as wh_pharmacy_name")
+            ->leftjoin('m_warehouse as b','a.wh_medical','=','b.sysid')
+            ->leftjoin('m_warehouse as c','a.wh_general','=','c.sysid')
+            ->leftjoin('m_class as d','a.price_class','=','d.sysid')
+            ->leftjoin('m_department as e','a.wh_pharmacy','=','e.sysid')
         ->where('a.sysid',$sysid)->first();
         return response()->success('Success',$data);
     }
@@ -68,6 +89,8 @@ class DepartmentController extends Controller
         $validator=Validator::make($row,
         [
             'dept_code'=>'bail|required',
+            'dept_name'=>'bail|required',
+            'dept_name'=>'bail|required',
             'dept_name'=>'bail|required',
         ],[
             'dept_code.required'=>'Kode klinik diisi',
@@ -91,6 +114,7 @@ class DepartmentController extends Controller
             $data->wh_general=$row['wh_general'];
             $data->wh_pharmacy=$row['wh_pharmacy'];
             $data->price_class=isset($row['price_class']) ? $row['price_class'] :'';
+            $data->is_executive=isset($row['is_executive']) ? $row['is_executive'] :'';
             $data->is_active=$row['is_active'];
             $data->update_userid=PagesHelp::UserID($request);
             $data->save();

@@ -5,16 +5,12 @@ namespace App\Models\Setup;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
 
-class Department extends Model
+class ParamedicPriceGroup extends Model
 {
-    protected $table = 'm_department';
+    protected $table = 'm_price_paramedic_groups';
     protected $primaryKey = 'sysid';
     public $timestamps = true;
     const CREATED_AT = 'create_date';
     const UPDATED_AT = 'update_date';
     protected $guarded =[];
-    protected $casts = [
-        'is_active'=>'boolean',
-        'is_executive'=>'boolean'
-    ];
 }
