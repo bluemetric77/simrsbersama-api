@@ -58,13 +58,14 @@ class HomeController extends Controller
             ->join('o_users as b','a.user_sysid','=','b.sysid')
             ->where('a.sign_code',$md5)->first();
         if ($data) {
+            $sysid=$data->user_sysid;
             if ($data->user_level=='USER'){
                 $item = Objects::selectRaw('sysid,sort_number,parent_sysid,object_level,title,icons,url_link,is_parent')
                 ->where('is_active',true)
                 ->whereIn('sysid',function ($query) use ($sysid){
                     $query->select('object_sysid')
                         ->from('o_users_access')
-                        ->where('sysid', $sysid)
+                        ->where('user_sysid', $sysid)
                         ->distinct()
                         ->get();
                 });

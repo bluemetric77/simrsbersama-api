@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Config\Users;
 use App\Models\Config\USessions;
+use App\Models\Config\UserObjects;
+
 use App\Models\Config\Sites;
 use Illuminate\Support\Facades\Validator;
 
@@ -14,20 +16,22 @@ class SecurityController extends Controller
 {
     public function Verified(Request $request){
         $jwt = $request->jwt;
+        $objects = $request->objects;
         $md5 = md5($jwt);
-        $session=USessions::selectRaw("now() as curr_time,expired_date,refresh_date,is_locked")
+        $session=USessions::selectRaw("now() as curr_time,expired_date,refresh_date,is_locked,user_sysid,user_name")
         ->where('sign_code',$md5)
         ->first();
         $data= array();
         if ($session) {
             if ($session->curr_time>$session->expired_date){
-                $data['allowed']=false;
-                $data['is_locked']=false;
+                $data['is_login']=false;
+                $data['is_allowed']=false;
+                $data['is_locked'] = ($session->is_locked==1);
                 USessions::where('sign_code',$md5)->delete();
                 return response()->error('Unallowed page',301,$data);
             } else {
-                $data['allowed']=true;
-                $data['is_locked'] = ($session->is_locked==1);
+                $data['is_login']=true;
+                $data['is_allowed']=false;
                 if ($session->curr_time>$session->refresh_date){
                     $user = decrypt($jwt);
                     $token = encrypt($user);
@@ -37,10 +41,28 @@ class SecurityController extends Controller
                     USessions::where('sign_code',$md5) 
                     ->update(['refresh_date'=>$refresh_date]);
                 }
+                if (!($objects=="/")){
+                    $user=Users::where('sysid',$session->user_sysid)->first();
+                    if ($user){
+                        if (!($user->user_level=='USER')) {
+                            $data['is_allowed']=true;
+                        } else {
+                            if (UserObjects::from('o_users_access as a')
+                            ->join('o_objects as b',"a.object_sysid","=","b.sysid")
+                            ->where("a.sysid",$session->$user_sysid)
+                            ->where("b.url_link",$objects)->exist()){
+                                $data['is_allowed']=true;
+                            }
+                        }
+                    }
+                } else {
+                    $data['is_allowed']=true;
+                }
                 return response()->success('Allowed page',$data);
             }
         } else {
-            $data['allowed']=false;
+            $data['is_login']=false;
+            $data['is_allowed']=false;
             return response()->error('Unallowed page',301,$data);
         }
     }
