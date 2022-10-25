@@ -42,6 +42,7 @@ Route::group(['prefix' => 'setup','middleware'=>'appauth'], function () {
         Route::delete('/class', 'destroy');
         Route::post('/class', 'store');
         Route::get('/class/open', 'open');
+        Route::get('/class/list', 'openlist');
     });
     Route::controller(\Setup\DepartmentController::class)->group(function () {
         Route::get('/department', 'index');
@@ -61,6 +62,34 @@ Route::group(['prefix' => 'setup','middleware'=>'appauth'], function () {
         Route::delete('/paramedic', 'destroy');
         Route::post('/paramedic', 'store');
     });
+    Route::controller(\Setup\ParamedicPriceGroupController::class)->group(function () {
+        Route::get('/price-group', 'index');
+        Route::get('/price-group/get', 'edit');
+        Route::delete('/price-group', 'destroy');
+        Route::post('/price-group', 'store');
+        Route::get('/price-group/open', 'open');
+    });
+    Route::controller(\Setup\ParamedicSpecialistController::class)->group(function () {
+        Route::get('/specialist', 'index');
+        Route::get('/specialist/get', 'edit');
+        Route::get('/specialist/open', 'open');
+        Route::delete('/specialist', 'destroy');
+        Route::post('/specialist', 'store');
+    });
+    Route::controller(\Setup\WardsController::class)->group(function () {
+        Route::get('/ward', 'index');
+        Route::get('/ward/get', 'edit');
+        Route::get('/ward/open', 'open');
+        Route::delete('/ward', 'destroy');
+        Route::post('/ward', 'store');
+    });
+    Route::controller(\Setup\WardRoomsController::class)->group(function () {
+        Route::get('/rooms', 'index');
+        Route::get('/rooms/get', 'edit');
+        Route::get('/rooms/open', 'open');
+        Route::delete('/rooms', 'destroy');
+        Route::post('/rooms', 'store');
+    });
 });
 
 Route::group(['prefix' => 'master','middleware'=>'appauth'], function () {
@@ -70,6 +99,24 @@ Route::group(['prefix' => 'master','middleware'=>'appauth'], function () {
             Route::get('/warehouse/get', 'edit');
             Route::delete('/warehouse', 'destroy');
             Route::post('/warehouse', 'store');
+        });
+        Route::controller(\Master\Inventory\MOUController::class)->group(function () {
+            Route::get('/mou', 'index');
+            Route::get('/mou/get', 'edit');
+            Route::delete('/mou', 'destroy');
+            Route::post('/mou', 'store');
+        });
+        Route::controller(\Master\Inventory\InventoryGroupController::class)->group(function () {
+            Route::get('/inventory-group', 'index');
+            Route::get('/inventory-group/get', 'edit');
+            Route::delete('/inventory-group', 'destroy');
+            Route::post('/inventory-group', 'store');
+        });
+        Route::controller(\Master\Inventory\InventoryController::class)->group(function () {
+            Route::get('/inventory', 'index');
+            Route::get('/inventory/get', 'edit');
+            Route::delete('/inventory', 'destroy');
+            Route::post('/inventory', 'store');
         });
     });
 

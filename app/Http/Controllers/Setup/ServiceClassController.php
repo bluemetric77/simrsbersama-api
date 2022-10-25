@@ -116,7 +116,7 @@ class ServiceClassController extends Controller
             $data=$data->where('is_price_class',true);
         } else if ($models=='INPATIENT') {
             $data=$data->where('is_service_class',true);
-        } else if ($models=='INPATIENT') {
+        } else if ($models=='PHARMACY') {
             $data=$data->where('is_pharmacy_class',true);
         } else if ($models=='BPJS') {
             $data=$data->where('is_bpjs_class',true);
@@ -129,6 +129,27 @@ class ServiceClassController extends Controller
             });
         }
         $data = $data->orderBy($sortBy, ($descending) ? 'desc':'asc')->paginate($limit);
+        return response()->success('Success', $data);
+    }
+
+    public function openlist(Request $request)
+    {
+        $filter = $request->filter;
+        $limit = isset($request->limit) ? $request->limit : 100;
+        $descending = $request->descending == "true";
+        $sortBy = $request->sortBy;
+        $models = isset($request->models) ? $request->models : 'SERVICE'; 
+        $data=ServiceClass::selectRaw("sysid,price_code,descriptions,sort_name");
+        if ($models=='SERVICE') {
+            $data=$data->where('is_price_class',true);
+        } else if ($models=='INPATIENT') {
+            $data=$data->where('is_service_class',true);
+        } else if ($models=='PHARMACY') {
+            $data=$data->where('is_pharmacy_class',true);
+        } else if ($models=='BPJS') {
+            $data=$data->where('is_bpjs_class',true);
+        }
+        $data=$data->orderBy('descriptions','asc')->get();
         return response()->success('Success', $data);
     }
 }

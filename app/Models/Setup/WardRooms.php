@@ -5,9 +5,9 @@ namespace App\Models\Setup;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
 
-class Department extends Model
+class WardRooms extends Model
 {
-    protected $table = 'm_ward_room';
+    protected $table = 'm_ward_rooms';
     protected $primaryKey = 'sysid';
     public $timestamps = true;
     const CREATED_AT = 'create_date';
@@ -15,5 +15,6 @@ class Department extends Model
     protected $guarded =[];
     protected $casts = [
         'is_active'=>'boolean',
+        'is_temporary'=>'boolean'
     ];
 }

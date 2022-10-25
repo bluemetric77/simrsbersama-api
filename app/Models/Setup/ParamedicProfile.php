@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ParamedicProfile extends Model
 {
-    protected $table = 'm_paramedic1';
+    protected $table = 'm_paramedic_profile';
     protected $primaryKey = 'sysid';
     public $timestamps = false;
     protected $guarded =[];
