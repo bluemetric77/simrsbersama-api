@@ -22,7 +22,8 @@ class ManufacturController extends Controller
             $data=Manufactur::selectRaw("sysid,manufactur_code,manufactur_name")
             ->where('is_active',true);
         } else {
-            $data=Manufactur::selectRaw("sysid,manufactur_code,manufactur_name,is_active,update_userid,create_date,update_date");
+            $data=Manufactur::selectRaw("sysid,manufactur_code,manufactur_name,address,phone1,phone2,fax,email,
+            contact_person,contact_phone,is_active,update_userid,create_date,update_date");
         }
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
@@ -89,7 +90,7 @@ class ManufacturController extends Controller
             $data->is_active=$row['is_active'];
             $data->update_userid=PagesHelp::UserID($request);
             $data->save();
-            PagesHelp::write_log($request,$data->sysid,$data->manufactur_name,'Add/Update recods');
+            PagesHelp::write_log($request,$data->sysid,$data->manufactur_code,'Add/Update recods '.$data->manufactur_name);
             DB::commit();
             return response()->success('Success','Simpan data berhasil');
         } catch(Exception $error) {

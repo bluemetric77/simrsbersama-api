@@ -113,6 +113,13 @@ Route::group(['prefix' => 'master','middleware'=>'appauth'], function () {
             Route::post('/mou', 'store');
             Route::get('/mou/list', 'list');
         });
+        Route::controller(\Master\Inventory\SupplierController::class)->group(function () {
+            Route::get('/supplier', 'index');
+            Route::get('/supplier/get', 'edit');
+            Route::delete('/supplier', 'destroy');
+            Route::post('/supplier', 'store');
+            Route::get('/supplier/list', 'list');
+        });
         Route::controller(\Master\Inventory\InventoryGroupController::class)->group(function () {
             Route::get('/inventory-group', 'index');
             Route::get('/inventory-group/get', 'edit');

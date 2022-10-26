@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Master\Inventory;
 
 use App\Models\Master\Inventory\Inventory;
+use App\Models\Master\Inventory\DrugInformations;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -28,10 +29,13 @@ class InventoryController extends Controller
             ->selectRaw("a.sysid,a.item_code,a.item_code_old,a.item_name1,a.mou_inventory,a.trademark,
                 a.is_sales,a.is_purchase,a.is_production,a.is_material,
                 a.is_active,a.update_userid,a.create_date,a.update_date,
-                b.manufactur_name as  manufactur,c.supplier_name")
+                b.manufactur_name as  manufactur,c.supplier_name,a.het_price,a.hna,on_hand,on_hand_unit,
+                a.item_group_sysid,a.item_subgroup_sysid,d.group_name,e.group_name as subgroup_name")
             ->leftjoin("m_manufactur as b","a.manufactur_sysid","=","b.sysid")
             ->leftjoin("m_supplier as c","a.prefered_vendor_sysid","=","c.sysid")
-            ->where('inventory_group',$group_name);
+            ->leftjoin("m_items_group as d","a.item_group_sysid","=","d.sysid")
+            ->leftjoin("m_items_group as e","a.item_subgroup_sysid","=","e.sysid")
+            ->where('a.inventory_group',$group_name);
         }
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
@@ -72,11 +76,19 @@ class InventoryController extends Controller
         if ($group_name=='MEDICAL'){
             $data=Inventory::from('m_items as a')
             ->selectRaw("a.sysid,a.item_code,a.item_code_old,a.item_name1,a.item_name2,a.mou_inventory,a.product_line,
-            a.is_price_rounded,a.price_rounded,a.is_expired_control,a.is_sales,a.is_purchase,a.is_production,a.is_material,
-            a.is_consignment,a.is_formularium,a.is_employee,a.is_inhealth,a.is_bpjs,a.is_employee,a.is_national,a.item_group_sysid,
-            a.trademark,a.manufactur_sysid,a.prefered_vendor_sysid,a.is_active,a.update_userid,a.create_date,a.update_date,
-            b.manufactur_name as manufactur,a.inventory_group,a.is_generic")
+                a.is_price_rounded,a.price_rounded,a.is_expired_control,a.is_sales,a.is_purchase,a.is_production,a.is_material,
+                a.is_consignment,a.is_formularium,a.is_employee,a.is_inhealth,a.is_bpjs,a.is_employee,a.is_national,a.item_group_sysid,
+                a.trademark,a.manufactur_sysid,a.prefered_vendor_sysid,a.is_active,a.update_userid,a.create_date,a.update_date,
+                b.manufactur_name as manufactur,a.inventory_group,a.is_generic,c.supplier_name as supplier,a.het_price,a.hna,a.cogs,
+                a.on_hand,a.on_hand_unit,a.item_group_sysid,a.item_subgroup_sysid,d.group_name,e.group_name as subgroup_name,
+                COALESCE(f.generic_name,'') as generic_name,COALESCE(f.rate,0) as rate,COALESCE(f.units,'') as units,COALESCE(f.forms,'') as forms,
+                COALESCE(f.special_instruction,'') as special_instruction,COALESCE(f.storage_instruction,'') as storage_instruction,
+                COALESCE(a.is_generic,false) as is_generic,COALESCE(f.medical_uses,'') as medical_uses")
             ->leftjoin("m_manufactur as b","a.manufactur_sysid","=","b.sysid")
+            ->leftjoin("m_supplier as c","a.prefered_vendor_sysid","=","c.sysid")
+            ->leftjoin("m_items_group as d","a.item_group_sysid","=","d.sysid")
+            ->leftjoin("m_items_group as e","a.item_subgroup_sysid","=","e.sysid")
+            ->leftjoin("m_items_informations as f","a.sysid","=","f.sysid")
             ->where('a.sysid',$sysid)->first();
         }
         return response()->success('Success',$data);
@@ -121,7 +133,10 @@ class InventoryController extends Controller
             $data->is_purchase=$row['is_purchase'];
             $data->is_material=$row['is_material'];
             $data->is_production=$row['is_production'];
+            $data->item_group_sysid=$row['item_group_sysid'];
+            $data->item_subgroup_sysid=$row['item_subgroup_sysid'];
             if ($row['inventory_group']=='MEDICAL'){
+                $data->het_price=$row['het_price'];
                 $data->is_consignment=$row['is_consignment'];
                 $data->is_formularium=$row['is_formularium'];
                 $data->is_inhealth=$row['is_inhealth'];
@@ -134,7 +149,24 @@ class InventoryController extends Controller
             $data->is_active=$row['is_active'];
             $data->update_userid=PagesHelp::UserID($request);
             $data->save();
-            PagesHelp::write_log($request,$data->sysid,$data->dept_code,'Add/Update recods');
+            $sysid=$data->sysid;
+            if ($row['inventory_group']=='MEDICAL'){
+                $drugs=DrugInformations::find($sysid);
+                if (!($drugs)) {
+                    $drugs=new DrugInformations();
+                }
+                $drugs->sysid=$sysid;
+                $drugs->generic_name=$row['generic_name'];
+                $drugs->rate=$row['rate'];
+                $drugs->units=$row['units'];
+                $drugs->forms=isset($row['forms']) ? $row['forms'] :'';
+                $drugs->storage_instruction=$row['storage_instruction'];
+                $drugs->special_instruction=$row['special_instruction'];
+                $drugs->medical_uses=$row['medical_uses'];
+                $drugs->is_generic=$row['is_generic'];
+                $drugs->save();
+            }
+            PagesHelp::write_log($request,$data->sysid,$data->item_code,'Add/Update recods ['.$data->item_code.'-'.$data->item_name1.']');
             DB::commit();
             return response()->success('Success','Simpan data berhasil');
         } catch(Exception $error) {

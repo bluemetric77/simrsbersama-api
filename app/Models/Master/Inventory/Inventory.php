@@ -28,6 +28,9 @@ class Inventory extends Model
         'is_national'=>'boolean',
         'cogs'=>'float',
         'hna'=>'float',
+        'het_price'=>'float',
+        'on_hand'=>'float',
+        'on_hand_unit'=>'float',
         'is_active'=>'boolean',
     ];
 }
