@@ -30,8 +30,9 @@ class ResponseServiceProvider extends ServiceProvider
     public function boot(ResponseFactory $factory)
     {
         $request = $this->app->request;
+
         $except = $this->except;
-        $factory->macro('success', function ($message = '', $data = null, $rowcount = 0) use ($factory,$request,$except) {
+        $factory->macro('success', function ($message = '', $data = null, $rowcount = 0,$respon_code=200) use ($factory,$request,$except) {
             $jwt = $request->header('x_jwt');
             $md5 = md5($jwt);
             $uri=strtolower($request->getPathInfo());
@@ -42,9 +43,19 @@ class ResponseServiceProvider extends ServiceProvider
                     $ignored = true;
                 }
             }
+            
+            $method = $request->method();
+            if ($request->isMethod('post')) {
+                $respon_code=201;
+                $message='Created';
+            } else if (($request->isMethod('get')) || ($request->isMethod('delete'))) {
+                $respon_code=200;
+                $message='Accepted';
+            }
+
             $header = [
                 'status'=>'OK',
-                'error_no'=>0,
+                'respon_code'=>$respon_code,
                 'message'=>$message
             ];
             
@@ -81,10 +92,10 @@ class ResponseServiceProvider extends ServiceProvider
             return $factory->make($format);
         });
 
-        $factory->macro('error', function (string $message = '', $error_code = 0, $errors = []) use ($factory) {
+        $factory->macro('error', function (string $message = '', $error_code = 400, $errors = []) use ($factory) {
             $header = [
                 'status'=>'NOT_OK',
-                'error_no'=>$error_code,
+                'respon_code'=>$error_code,
                 'message'=>$message
             ];
             $info = [

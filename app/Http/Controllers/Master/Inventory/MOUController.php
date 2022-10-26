@@ -94,4 +94,10 @@ class MOUController extends Controller
             DB::rollback();    
         }    
     }
+    public function list(Request $request){
+        $sysid=isset($request->sysid) ? $request->sysid :'-1';
+        $data=MeasureOfUnit::selectRaw("sysid,mou_name")
+        ->where('is_active','1')->get();
+        return response()->success('Success',$data);
+    }    
 }

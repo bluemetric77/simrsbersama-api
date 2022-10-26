@@ -24,7 +24,8 @@ class WarehouseController extends Controller
             ->where('warehouse_group',$group_name)
             ->where('is_active',true);
         } else {
-            $data=Warehouse::selectRaw("sysid,loc_code,location_name,is_received,is_sales,is_distribution,is_active,update_userid,create_date,update_date")
+            $data=Warehouse::selectRaw("sysid,loc_code,location_name,inventory_account,cogs_account,expense_account,variant_account,
+            warehouse_type,is_received,is_sales,is_distribution,is_active,update_userid,create_date,update_date")
             ->where('warehouse_group',$group_name);
         }
         if (!($filter == '')) {
@@ -60,7 +61,8 @@ class WarehouseController extends Controller
 
     public function edit(Request $request){
         $sysid=isset($request->sysid) ? $request->sysid :'-1';
-        $data=Warehouse::selectRaw("sysid,loc_code,location_name,is_received,is_sales,is_distribution,is_active")
+        $data=Warehouse::selectRaw("sysid,loc_code,location_name,inventory_account,cogs_account,expense_account,variant_account,
+            warehouse_type,is_received,is_sales,is_distribution,is_active")
         ->where('sysid',$sysid)->first();
         return response()->success('Success',$data);
     }
@@ -90,6 +92,11 @@ class WarehouseController extends Controller
             }
             $data->loc_code=$row['loc_code'];
             $data->location_name=$row['location_name'];
+            $data->inventory_account=$row['inventory_account'];
+            $data->cogs_account=$row['cogs_account'];
+            $data->expense_account=$row['expense_account'];
+            $data->variant_account=$row['variant_account'];
+            $data->warehouse_type=$row['warehouse_type'];
             $data->is_received=$row['is_received'];
             $data->is_sales=$row['is_sales'];
             $data->is_distribution=$row['is_distribution'];

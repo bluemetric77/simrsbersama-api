@@ -100,11 +100,18 @@ Route::group(['prefix' => 'master','middleware'=>'appauth'], function () {
             Route::delete('/warehouse', 'destroy');
             Route::post('/warehouse', 'store');
         });
+        Route::controller(\Master\Inventory\ManufacturController::class)->group(function () {
+            Route::get('/manufactur', 'index');
+            Route::get('/manufactur/get', 'edit');
+            Route::delete('/manufactur', 'destroy');
+            Route::post('/manufactur', 'store');
+        });
         Route::controller(\Master\Inventory\MOUController::class)->group(function () {
             Route::get('/mou', 'index');
             Route::get('/mou/get', 'edit');
             Route::delete('/mou', 'destroy');
             Route::post('/mou', 'store');
+            Route::get('/mou/list', 'list');
         });
         Route::controller(\Master\Inventory\InventoryGroupController::class)->group(function () {
             Route::get('/inventory-group', 'index');
@@ -113,10 +120,10 @@ Route::group(['prefix' => 'master','middleware'=>'appauth'], function () {
             Route::post('/inventory-group', 'store');
         });
         Route::controller(\Master\Inventory\InventoryController::class)->group(function () {
-            Route::get('/inventory', 'index');
-            Route::get('/inventory/get', 'edit');
-            Route::delete('/inventory', 'destroy');
-            Route::post('/inventory', 'store');
+            Route::get('/inventory-item', 'index');
+            Route::get('/inventory-item/get', 'edit');
+            Route::delete('/inventory-item', 'destroy');
+            Route::post('/inventory-item', 'store');
         });
     });
 
@@ -144,18 +151,6 @@ Route::group(['prefix' => 'user', 'as' => 'master','middleware'=>'appauth'], fun
 });
 
 Route::group(['prefix' => 'master', 'as' => 'master','middleware'=>'appauth'], function () {
-    Route::get('/inventory/item-group', 'Master\ItemGroupController@index');
-    Route::post('/inventory/item-group', 'Master\ItemGroupController@post');
-    Route::delete('/inventory/item-group', 'Master\ItemGroupController@delete');
-    Route::get('/inventory/item-group/get', 'Master\ItemGroupController@get');
-    Route::get('/inventory/item-group/list', 'Master\ItemGroupController@getlist');
-
-    Route::get('/inventory/items', 'Master\ItemsController@index');
-    Route::post('/inventory/items', 'Master\ItemsController@post');
-    Route::delete('/inventory/items', 'Master\ItemsController@delete');
-    Route::get('/inventory/items/get', 'Master\ItemsController@get');
-    Route::get('/inventory/items/open', 'Master\ItemsController@open');
-
     Route::get('/partner/partner', 'Master\PartnerController@index');
     Route::post('/partner/partner', 'Master\PartnerController@post');
     Route::delete('/partner/partner', 'Master\PartnerController@delete');

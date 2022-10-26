@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers\Master\Inventory;
 
-use App\Models\Master\Inventory\InventoryGroup;
+use App\Models\Master\Inventory\Manufactur;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use PagesHelp;
 
-class InventoryGroupController extends Controller
+class ManufacturController extends Controller
 {
     public function index(Request $request)
     {
@@ -17,23 +17,18 @@ class InventoryGroupController extends Controller
         $limit = isset($request->limit) ? $request->limit : 100;
         $descending = $request->descending == "true";
         $sortBy = $request->sortBy;
-        $group_name=isset($request->group_name) ? $request->group_name : 'MEDICAL';
         $is_active=isset($request->is_active) ? $request->is_active : false;
         if ($is_active==true) {
-            $data=InventoryGroup::selectRaw("sysid,group_code,group_name,inventory_account,cogs_account,expense_account,variant_account")
-            ->where('inventory_group',$group_name)
+            $data=Manufactur::selectRaw("sysid,manufactur_code,manufactur_name")
             ->where('is_active',true);
         } else {
-            $data=InventoryGroup::selectRaw("sysid,group_code,group_name,inventory_account,cogs_account,expense_account,variant_account,
-            is_active,update_userid,create_date,update_date")
-            ->where('inventory_group',$group_name)
-            ->where('is_subgroup',false);
+            $data=Manufactur::selectRaw("sysid,manufactur_code,manufactur_name,is_active,update_userid,create_date,update_date");
         }
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {
-                $q->where('group_code', 'ilike', $filter);
-                $q->orwhere('group_name', 'ilike', $filter);
+                $q->where('manufactur_code', 'ilike', $filter);
+                $q->orwhere('manufactur_name', 'ilike', $filter);
             });
         }
         $data = $data->orderBy($sortBy, ($descending) ? 'desc':'asc')->paginate($limit);
@@ -42,11 +37,11 @@ class InventoryGroupController extends Controller
 
     public function destroy(Request $request){
         $sysid=isset($request->sysid) ? $request->sysid :'-1';
-        $data=InventoryGroup::find($sysid);
+        $data=Manufactur::find($sysid);
         if ($data) {
             DB::beginTransaction();
             try{
-                PagesHelp::write_log($request,$data->sysid,$data->group_code,'Deleting recods [ '.$data->group_code.'-'.$data->group_name.' ]');
+                PagesHelp::write_log($request,$data->sysid,$data->manufactur_code,'Deleting recods '.$data->manufactur_name);
                 $data->delete();
                 DB::commit();
                 return response()->success('Success','Hapus data berhasil');
@@ -62,8 +57,7 @@ class InventoryGroupController extends Controller
 
     public function edit(Request $request){
         $sysid=isset($request->sysid) ? $request->sysid :'-1';
-        $data=InventoryGroup::selectRaw("sysid,group_code,group_name,inventory_account,cogs_account,cost_account,variant_account,
-            is_active")
+        $data=Manufactur::selectRaw("sysid,manufactur_code,manufactur_name,is_active")
         ->where('sysid',$sysid)->first();
         return response()->success('Success',$data);
     }
@@ -74,11 +68,11 @@ class InventoryGroupController extends Controller
         $opr = $info['operation'];
         $validator=Validator::make($row,
         [
-            'group_code'=>'bail|required',
-            'group_name'=>'bail|required',
+            'manufactur_code'=>'bail|required',
+            'manufactur_name'=>'bail|required',
         ],[
-            'group_code.required'=>'Kode grup inventory harus diisi',
-            'group_name.required'=>'Nama grup inventory harus diisi',
+            'manufactur_code.required'=>'Kode pabrik harus diisi',
+            'manufactur_name.required'=>'Nama pabrik harus diisi',
         ]);
         if ($validator->fails()) {
             return response()->error('',501,$validator->errors()->first());
@@ -86,25 +80,26 @@ class InventoryGroupController extends Controller
         DB::beginTransaction();
         try {
             if ($opr=='inserted'){
-                $data = new InventoryGroup();
-                $data->inventory_group=$row['inventory_group'];
+                $data = new Manufactur();
             } else if ($opr=='updated'){
-                $data = InventoryGroup::find($row['sysid']);
+                $data = Manufactur::find($row['sysid']);
             }
-            $data->group_code=$row['group_code'];
-            $data->group_name=$row['group_name'];
-            $data->inventory_account=$row['inventory_account'];
-            $data->cogs_account=$row['cogs_account'];
-            $data->expense_account=$row['expense_account'];
-            $data->variant_account=$row['variant_account'];
+            $data->manufactur_code=$row['manufactur_code'];
+            $data->manufactur_name=$row['manufactur_name'];
             $data->is_active=$row['is_active'];
             $data->update_userid=PagesHelp::UserID($request);
             $data->save();
-            PagesHelp::write_log($request,$data->sysid,$data->dept_code,'Add/Update recods [ '.$data->group_code.'-'.$data->group_name.' ]');
+            PagesHelp::write_log($request,$data->sysid,$data->manufactur_name,'Add/Update recods');
             DB::commit();
             return response()->success('Success','Simpan data berhasil');
         } catch(Exception $error) {
             DB::rollback();    
         }    
     }
+    public function list(Request $request){
+        $sysid=isset($request->sysid) ? $request->sysid :'-1';
+        $data=Manufactur::selectRaw("sysid,manufactur_code,manufactur_name")
+        ->where('is_active','1')->get();
+        return response()->success('Success',$data);
+    }    
 }

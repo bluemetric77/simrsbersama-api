@@ -24,9 +24,13 @@ class InventoryController extends Controller
             ->where('inventory_group',$group_name)
             ->where('is_active',true);
         } else {
-            $data=Inventory::from('m_item as a')
-            ->selectRaw("a.sysid,a.item_code,a.item_code_old,a.item_name1,a.trademark,a.is_sales,a.is_purchase,a.is_production,a.is_material,
-            a.is_active,a.update_userid,a.create_date,a.update_date")
+            $data=Inventory::from('m_items as a')
+            ->selectRaw("a.sysid,a.item_code,a.item_code_old,a.item_name1,a.mou_inventory,a.trademark,
+                a.is_sales,a.is_purchase,a.is_production,a.is_material,
+                a.is_active,a.update_userid,a.create_date,a.update_date,
+                b.manufactur_name as  manufactur,c.supplier_name")
+            ->leftjoin("m_manufactur as b","a.manufactur_sysid","=","b.sysid")
+            ->leftjoin("m_supplier as c","a.prefered_vendor_sysid","=","c.sysid")
             ->where('inventory_group',$group_name);
         }
         if (!($filter == '')) {
@@ -65,12 +69,14 @@ class InventoryController extends Controller
     public function edit(Request $request){
         $sysid=isset($request->sysid) ? $request->sysid :'-1';
         $group_name=isset($request->group_name) ? $request->group_name : 'MEDICAL';
-        if (group_name=='MEDICAL'){
-            $data=Inventory::from('m_item as a')
+        if ($group_name=='MEDICAL'){
+            $data=Inventory::from('m_items as a')
             ->selectRaw("a.sysid,a.item_code,a.item_code_old,a.item_name1,a.item_name2,a.mou_inventory,a.product_line,
             a.is_price_rounded,a.price_rounded,a.is_expired_control,a.is_sales,a.is_purchase,a.is_production,a.is_material,
-            a.is_consigment,a.is_formularium,a.is_employee,a.is_inhealth,a.is_bpjs,a.is_employee,a.is_national,a.is_item_group_sysid,
-            a.trademark,a.manufactur_sysid,a.prefred_vendor_sysid,a.is_active,a.update_userid,a.create_date,a.update_date")
+            a.is_consignment,a.is_formularium,a.is_employee,a.is_inhealth,a.is_bpjs,a.is_employee,a.is_national,a.item_group_sysid,
+            a.trademark,a.manufactur_sysid,a.prefered_vendor_sysid,a.is_active,a.update_userid,a.create_date,a.update_date,
+            b.manufactur_name as manufactur,a.inventory_group,a.is_generic")
+            ->leftjoin("m_manufactur as b","a.manufactur_sysid","=","b.sysid")
             ->where('a.sysid',$sysid)->first();
         }
         return response()->success('Success',$data);
@@ -97,7 +103,7 @@ class InventoryController extends Controller
         try {
             if ($opr=='inserted'){
                 $data = new Inventory();
-                $data->Inventory_group=$row['inventory_group'];
+                $data->inventory_group=$row['inventory_group'];
             } else if ($opr=='updated'){
                 $data = Inventory::find($row['sysid']);
             }
@@ -107,6 +113,24 @@ class InventoryController extends Controller
             $data->mou_inventory=$row['mou_inventory'];
             $data->is_price_rounded=isset($row['is_price_rounded']) ? $row['is_price_rounded'] :false;
             $data->price_rounded=isset($row['price_rounded']) ? $row['price_rounded'] :0;
+            $data->manufactur_sysid=isset($row['manufactur_sysid']) ? $row['manufactur_sysid'] :-1;
+            $data->prefered_vendor_sysid=isset($row['prefered_vendor_sysid']) ? $row['prefered_vendor_sysid'] :-1;
+            $data->is_price_rounded=$row['is_price_rounded'];
+            $data->price_rounded=$row['price_rounded'];
+            $data->is_sales=$row['is_sales'];
+            $data->is_purchase=$row['is_purchase'];
+            $data->is_material=$row['is_material'];
+            $data->is_production=$row['is_production'];
+            if ($row['inventory_group']=='MEDICAL'){
+                $data->is_consignment=$row['is_consignment'];
+                $data->is_formularium=$row['is_formularium'];
+                $data->is_inhealth=$row['is_inhealth'];
+                $data->is_bpjs=$row['is_bpjs'];
+                $data->is_national=$row['is_national'];
+                $data->is_employee=$row['is_employee'];
+                $data->is_expired_control=$row['is_expired_control'];
+                $data->is_generic=$row['is_generic'];
+            }
             $data->is_active=$row['is_active'];
             $data->update_userid=PagesHelp::UserID($request);
             $data->save();
