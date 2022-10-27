@@ -131,6 +131,7 @@ Route::group(['prefix' => 'master','middleware'=>'appauth'], function () {
             Route::get('/inventory-item/get', 'edit');
             Route::delete('/inventory-item', 'destroy');
             Route::post('/inventory-item', 'store');
+            Route::get('/inventory-item/image/download', 'download');
         });
     });
 

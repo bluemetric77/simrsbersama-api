@@ -16,7 +16,7 @@ class Appauth
      * @param  \Closure  $next
      * @return mixed
      */
-    protected $ignored_auth=false;
+    protected $ignored_auth=true;
 
     public function handle($request, Closure $next)
     {

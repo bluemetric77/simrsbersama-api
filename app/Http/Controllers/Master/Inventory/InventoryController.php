@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 use PagesHelp;
 
 class InventoryController extends Controller
@@ -30,7 +31,7 @@ class InventoryController extends Controller
                 a.is_sales,a.is_purchase,a.is_production,a.is_material,
                 a.is_active,a.update_userid,a.create_date,a.update_date,
                 b.manufactur_name as  manufactur,c.supplier_name,a.het_price,a.hna,on_hand,on_hand_unit,
-                a.item_group_sysid,a.item_subgroup_sysid,d.group_name,e.group_name as subgroup_name")
+                a.item_group_sysid,a.item_subgroup_sysid,d.group_name,e.group_name as subgroup_name,a.image_path")
             ->leftjoin("m_manufactur as b","a.manufactur_sysid","=","b.sysid")
             ->leftjoin("m_supplier as c","a.prefered_vendor_sysid","=","c.sysid")
             ->leftjoin("m_items_group as d","a.item_group_sysid","=","d.sysid")
@@ -83,7 +84,7 @@ class InventoryController extends Controller
                 a.on_hand,a.on_hand_unit,a.item_group_sysid,a.item_subgroup_sysid,d.group_name,e.group_name as subgroup_name,
                 COALESCE(f.generic_name,'') as generic_name,COALESCE(f.rate,0) as rate,COALESCE(f.units,'') as units,COALESCE(f.forms,'') as forms,
                 COALESCE(f.special_instruction,'') as special_instruction,COALESCE(f.storage_instruction,'') as storage_instruction,
-                COALESCE(a.is_generic,false) as is_generic,COALESCE(f.medical_uses,'') as medical_uses")
+                COALESCE(a.is_generic,false) as is_generic,COALESCE(f.medical_uses,'') as medical_uses,a.image_path")
             ->leftjoin("m_manufactur as b","a.manufactur_sysid","=","b.sysid")
             ->leftjoin("m_supplier as c","a.prefered_vendor_sysid","=","c.sysid")
             ->leftjoin("m_items_group as d","a.item_group_sysid","=","d.sysid")
@@ -95,7 +96,7 @@ class InventoryController extends Controller
     }
 
     public function store(Request $request){
-        $info = $request->json()->all();
+        $info = json_decode($request->json,true);
         $row = $info['data'];
         $opr = $info['operation'];
         $validator=Validator::make($row,
@@ -166,11 +167,36 @@ class InventoryController extends Controller
                 $drugs->is_generic=$row['is_generic'];
                 $drugs->save();
             }
+
+            $uploadedFile = $request->file('file');
+            if ($uploadedFile){
+                $originalFile = $uploadedFile->getClientOriginalName();        
+                $originalFile = Date('Ymd-His')."-".$originalFile;
+                $directory="inventory";
+                $path = $uploadedFile->storeAs($directory,$originalFile);
+                Inventory::where('sysid',$sysid)->update(['image_path'=>$path]);
+            }
+
             PagesHelp::write_log($request,$data->sysid,$data->item_code,'Add/Update recods ['.$data->item_code.'-'.$data->item_name1.']');
             DB::commit();
             return response()->success('Success','Simpan data berhasil');
         } catch(Exception $error) {
             DB::rollback();    
         }    
+    }
+    public function download(Request $request)
+    {
+        $sysid = isset($request->sysid) ? $request->sysid : -1;
+        $document=isset($request->document) ? $request->document :'';
+        $data=Inventory::selectRaw("COALESCE(image_path,'') as image")->where('sysid',$sysid)->first();
+        if ($data) {
+            if ($data->image!=''){
+                //$publicPath = \Storage::url($data->image);
+                $headers = array('Content-Type: application/image');
+                return Storage::download($data->image);            
+            }
+        } else {
+              return response()->error('',301,'Dokumen tidak ditemukan');
+        }
     }
 }
