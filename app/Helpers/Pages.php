@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Http\Request;
 use App\Models\Config\Parameters;
+use App\Models\Config\USessions;
 use App\Models\Config\Objects;
 use App\Models\Setup\UserLogs;
 use Illuminate\Support\Facades\Route;
@@ -29,14 +30,9 @@ class Pages
       return null;
    }
    public static function UserID($request){
-      $jwt = $request->header('x_jwt');
-      if ( (!($jwt=='')) || (!($jwt==null)) ) {
-        $data = decrypt($jwt);
-        $index = strpos($data,'##');
-        return substr($data,0,$index);
-      } else {
-         return 'N/A';
-      }
+      $token = $request->header('x_jwt');
+      $ses=USessions::selectRaw("user_name")->where('sign_code',$token)->first();
+      return isset($ses->user_name) ? $ses->user_name:'N/A';
    }
 
    public static function Profile(){
@@ -179,7 +175,7 @@ class Pages
          ->where('key_word',$code)
          ->update($rec);
    }
-   
+
    public static function my_server_url()
     {
       $profile=Parameters::selectRaw("value_string")
@@ -205,9 +201,9 @@ class Pages
 
       return $scheme.'://'.$server_name.$port.$folder;
    }
-   
+
    public static function month($index)
-   {  
+   {
       $months=['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
         'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
       return $months[$index-1];
@@ -297,9 +293,9 @@ class Pages
     }
     return trim($w);
    }
-   
+
    public static function Response($response,$filename='download.xlsx')
-   {  
+   {
       $attachment='attachment; filename="'.$filename.'"';
       $response->setStatusCode(200);
       $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -356,13 +352,13 @@ class Pages
 
       $ip="192.168.43.2";
       $agent = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)';
-      $header[0]  = "Accept: text/xml,application/xml,application/xhtml+xml,"; 
+      $header[0]  = "Accept: text/xml,application/xml,application/xhtml+xml,";
       $header[0] .= "text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5";
-      $header[] = "Cache-Control: max-age=0"; 
-      $header[] = "Connection: keep-alive"; 
-      $header[] = "Keep-Alive: 300"; 
-      $header[] = "Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7"; 
-      $header[] = "Accept-Language: en-us,en;q=0.5"; 
+      $header[] = "Cache-Control: max-age=0";
+      $header[] = "Connection: keep-alive";
+      $header[] = "Keep-Alive: 300";
+      $header[] = "Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7";
+      $header[] = "Accept-Language: en-us,en;q=0.5";
       $header[] = "Pragma: "; // browsers = blank
       $header[] = "X_FORWARDED_FOR: " . $ip;
       $header[] = "REMOTE_ADDR: " . $ip;
@@ -374,12 +370,12 @@ class Pages
 		curl_setopt($ch, CURLOPT_URL, $url);
       curl_setopt($ch, CURLOPT_USERAGENT, $agent);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-      curl_setopt($ch, CURLOPT_HTTPHEADER, $header); 
+      curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
       if ($post){
          curl_setopt($ch, CURLOPT_POST, true);
       }
       if ($deleted) {
-         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE"); 
+         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
       }
 		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST,0);
       curl_setopt($ch, CURLOPT_SSL_VERIFYPEER,0);
@@ -390,14 +386,14 @@ class Pages
 		if ($output==false)	{
          $info['status']=false;
 			$info['message']=curl_error($ch);
-		} else {	
+		} else {
          $output = preg_replace('/&(?!#?[a-z0-9]+;)/', '&amp;', $output);
          $info['status']=true;
          $info['json']=json_decode($output,true);
          $info['message']=json_last_error_msg();
 		}
-      curl_close($ch);  
-      return $info;  
+      curl_close($ch);
+      return $info;
    }
 
    public static function write_log(Request $request,$sysid,$doc_number,$message) {
@@ -436,6 +432,6 @@ class Pages
       }
       $minute_text=$minute_text.strval($minute).' mnt';
       return $minute_text;
-   }   
+   }
 
 }

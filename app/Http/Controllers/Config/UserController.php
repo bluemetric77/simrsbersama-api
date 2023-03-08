@@ -8,25 +8,30 @@ use App\Models\Config\USessions;
 use App\Models\Config\Parameters;
 use App\Models\Config\UserObjects;
 use App\Models\Config\UserReports;
+use App\Models\Config\Objects;
+use App\Models\Config\Reports;
 use PagesHelp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
+    private $salt='$2y$06$Pi1ND0N3S1A#&m3Rd3K4#@%!';
+
     public function index(Request $request)
     {
-        $jwt=$request->header('x_jwt');
+        $token=$request->header('x_jwt');
         $filter = $request->filter;
         $limit = $request->limit;
-        $descending = ($request->descending=="true");
+        $sorting = ($request->descending=="true") ? "desc":"asc";
         $sortBy = $request->sortBy;
-        $userid=Users::getuserIDfromJWT($jwt);
-        $user=Users::UserProfile($userid);
+        $user=USessions::user($token);
         $data= Users::selectRaw("sysid,user_name,full_name,photo,email,is_group,
-                is_active,user_level");
+                is_active,user_level,uuid_rec");
         if (!($filter=='')){
             $filter='%'.trim($filter).'%';
             $data=$data->where(function($q) use ($filter) {
@@ -38,15 +43,7 @@ class UserController extends Controller
         if (!($user->user_level=='ADMIN')){
             $data=$data->where('user_name',$userid);
         }
-        if (!($sortBy=='')) {
-            if ($descending) {
-                $data=$data->orderBy($sortBy,'desc')->paginate($limit);
-            } else {
-                $data=$data->orderBy($sortBy,'asc')->paginate($limit);
-            }
-        } else {
-            $data=$data->paginate($limit);
-        }
+        $data=$data->orderBy($sortBy,$sorting)->paginate($limit);
         $data=$data->toArray();
         $rows=array();
         $server=PagesHelp::my_server_url();
@@ -64,8 +61,8 @@ class UserController extends Controller
        $data=USessions::selectRaw('user_sysid,user_name')->where('sign_code',$md5)->first();
        if ($data){
            $data=Users::selectRaw("sysid,user_name,full_name,email,photo,sign")
-           ->where('sysid',$data->user_sysid) 
-           ->first(); 
+           ->where('sysid',$data->user_sysid)
+           ->first();
            if ($data){
                 $server=PagesHelp::my_server_url();
                 $data['photo']=$server.'/'.$data['photo'];
@@ -79,10 +76,10 @@ class UserController extends Controller
 
     public function get(Request $request)
     {
-        $sysid=$request->sysid;
+        $uuid=isset($request->uuid) ? $request->uuid :'';
         $users = Users::selectRaw("sysid,user_name,full_name,phone,email,is_group,
-                is_active,user_level")
-            ->where('sysid',$sysid)
+                is_active,user_level,uuid_rec")
+            ->where('uuid_rec',$uuid)
             ->first();
         return response()->success('',$users,1);
     }
@@ -93,12 +90,31 @@ class UserController extends Controller
         $row=$data['data'];
         $opr=$data['operation'];
         $where=$data['where'];
+        $validator=Validator::make($row,
+        [
+            'user_name'=>'bail|required',
+            'full_name'=>'bail|required',
+            'is_group'=>'bail|required',
+            'user_level'=>'bail|required',
+            'email'=>'bail|required',
+        ],[
+            'user_name.required'=>'User ID harus disi harus diisi',
+            'full_name.required'=>'Nama user barus harus diisi',
+            'is_group.required'=>'Type user harus diisi',
+            'user_level.required'=>'Level user harus diisi',
+            'email.required'=>'Email harus diisi',
+        ]);
+        if ($validator->fails()) {
+            return response()->error('',501,$validator->errors()->first());
+        }
+
         DB::beginTransaction();
         try{
             if ($opr=='inserted'){
                 $user = new Users();
+                $user->uuid_rec=Str::uuid()->toString();
             } else if ($opr=='updated'){
-                $user = Users::where('sysid',$where)->first();
+                $user = Users::where('uuid_rec',$row['uuid_rec'])->first();
             }
             if ($user){
                 $user->user_name=$row['user_name'];
@@ -111,7 +127,9 @@ class UserController extends Controller
                 $user->update_userid=PagesHelp::UserID($request);
                 $user->save();
                 DB::commit();
-                return response()->success('success','Simpan data berhasil');
+                $info['uuid']=$user->uuid_rec;
+                $info['message']='Simpan/update data berhasil';
+                return response()->success('success',$info);
             }
 		} catch (Exception $e) {
             DB::rollback();
@@ -135,7 +153,7 @@ class UserController extends Controller
         DB::beginTransaction();
         try{
             $sysid=$user->sysid;
-            Users::where('sysid',$sysid) 
+            Users::where('sysid',$sysid)
             ->update([
                 'user_name'=>$row['user_name'],
                 'email'=>$row['email'],
@@ -164,7 +182,7 @@ class UserController extends Controller
         try{
             UserObjects::where('sysid',$sysid)->delete();
             foreach ($security as $line) {
-                $main = $line['main'];                   
+                $main = $line['main'];
                 foreach ($main as $detail) {
                     if ($detail['header']==0) {
                         $objid = $detail['object_id'];
@@ -190,8 +208,8 @@ class UserController extends Controller
                                     ]);
                             }
                         }
-                    } 
-                } 
+                    }
+                }
             }
             UserReports::where('sysid',$sysid)->delete();
             foreach ($reports as $report) {
@@ -201,7 +219,7 @@ class UserController extends Controller
                     'report_sysid'=>$report['sysid'],
                     'is_allow'=>$report['is_selected'],
                     'is_export'=>isset($report['is_selected']) ? $report['is_selected'] :false
-                ]);     
+                ]);
                }
             }
             DB::commit();
@@ -213,49 +231,55 @@ class UserController extends Controller
     }
 
     public function delete(Request $request){
-        $id=$request->sysid;
-        $data=Users::selectRaw("sysid")->where('sysid',$id)->first();
+        $uuid=isset($request->uuid) ? $request->uuid :'';
+        $data=Users::selectRaw("sysid")->where('uuid_rec',$uuid)->first();
         if ($data) {
             DB::beginTransaction();
             try{
-                Users::where('sysid',$id)->delete();    
-                UserObjects::where('user_sysid',$data->sysid)->delete();    
+                Users::where('sysid',$data->sysid)->delete();
+                UserObjects::where('user_sysid',$data->sysid)->delete();
                 DB::commit();
                 return response()->success('Success','Data berhasil dihapus');
             } catch(\Exception $e) {
-               return response()->error('',501,$e); 
-               DB::rollback(); 
+               return response()->error('',501,$e);
+               DB::rollback();
             }
         } else {
            return response()->error('',501,'Data tidak ditemukan');
-        }    
+        }
     }
 
     public function changepassword(Request $request){
-        $jwt=$request->header('x_jwt');
-        $md5=md5($jwt);
-        $session=Usessions::select('user_sysid')->where('sign_code',$md5)->first();
-        if ($session){
-           $user=Users::selectRaw('sysid,password')->where('sysid',$session->user_sysid)->first();
-        } else {
-            return response()->error('',501,'Data tidak ditemukan');
+        $validator=Validator::make($request,
+        [
+            'pwdold'=>'bail|required',
+            'pwd1'=>'bail|required',
+            'pwd2'=>'bail|required',
+        ],[
+            'pwdold.required'=>'Password lama harus disi harus diisi',
+            'pwd1.required'=>'Password barus harus diisi',
+            'pwd2.required'=>'Password konfirmasi harus diisi',
+        ]);
+        if ($validator->fails()) {
+            return response()->error('',501,$validator->errors()->first());
         }
+        $token=$request->header('x_jwt');
+        $user=USessions::user($token);
         $sysid=$user->sysid;
-        $old_pwd=$request->pwdold;
+        $old_pwd=isset($request->pwdold) ? $request->pwdold :'';
+        $old_pwd=$old_pwd.$this->salt;
         $pwd1=$request->pwd1;
         $pwd2=$request->pwd2;
 
-        $pwd=decrypt($user->password);
-        if (!($pwd==$old_pwd)){
+        if (Hash::check($old_pwd, $user->password)) {
             return response()->error('',501,'Password lama salah');
         }
         if (!($pwd1==$pwd2)){
             return response()->error('',501,'Konfirmasi password berbeda');
         }
-        $pwd=encrypt($pwd1);
         try{
-            Users::where('sysid',$sysid) 
-                ->update(['password'=>$pwd]);
+            Users::where('sysid',$sysid)
+                ->update(['password'=>Hash::make($pwd1.$this->salt)]);
             return response()->success('success','Ubah password berhasil');
 		} catch (Exception $e) {
             return response()->error('',501,$e);
@@ -263,23 +287,34 @@ class UserController extends Controller
     }
 
     public function changepwd(Request $request){
-        $jwt=$request->header('x_jwt');
-        $userid=Users::getuserIDfromJWT($jwt);
-        $user=Users::UserProfile($userid);
+        $validator=Validator::make($request->all(),
+        [
+            'pwd1'=>'bail|required',
+            'pwd2'=>'bail|required',
+        ],[
+            'pwd1.required'=>'Password barus harus diisi',
+            'pwd2.required'=>'Password konfirmasi harus diisi',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->error('',501,$validator->errors()->first());
+        }
+        $token=$request->header('x_jwt');
+        $user=USessions::user($token);
         if (!($user->user_level=='ADMIN')){
             if (!($user->sysid==$request->sysid)){
-                return response()->error('',501,'Not Allow to change password other user');
+                return response()->error('',501,'Tidak diizinkan untuk mengubah password');
             }
         }
-        $sysid=$request->sysid;
+        $uuid=$request->uuid;
         $pwd1=$request->pwd1;
         $pwd2=$request->pwd2;
         if (!($pwd1==$pwd2)){
-            return response()->error('',501,'Confirm password is different');
+            return response()->error('',501,'Password konfirmasi berbeda');
         }
-        $pwd=encrypt($pwd1);
         try{
-            Users::where('sysid',$sysid) 
+            $pwd=Hash::make($pwd1.$this->salt);
+            Users::where('uuid_rec',$uuid)
                 ->update(['password'=>$pwd]);
             return response()->success('success','Ubah password berhasil');
 		} catch (Exception $e) {
@@ -297,7 +332,7 @@ class UserController extends Controller
     }
 
     public function getItem(Request $request){
-        $item = Objects::select('sysid,parent_sysid,sort_number,title,icons,is_parent,security')
+        $item = Objects::selectRaw('sysid,parent_sysid,sort_number,title,icons,is_parent,security')
             ->where('is_active',true)
             ->distinct()
             ->orderBy('sort_number')
@@ -305,9 +340,9 @@ class UserController extends Controller
         return response()->success('Success',$item);
     }
     public function getItemAccess(Request $request){
-        $item = Objects::select('sysid,parent_sysid,sort_number,title,icons,is_parent,security')
+        $item = Objects::selectRaw('sysid,parent_sysid,sort_number,title,icons,is_parent,security')
             ->where('is_active',true)
-            ->where('is_header',false)
+            ->where('is_parent',false)
             ->distinct()
             ->orderBy('sort_number')
             ->get();
@@ -319,7 +354,7 @@ class UserController extends Controller
         $sysid  = isset($request->sysid) ? $request->sysid : '';
         $sysid  = strval($sysid);
         $uploadedFile = $request->file('file');
-        $originalFile = $uploadedFile->getClientOriginalName();        
+        $originalFile = $uploadedFile->getClientOriginalName();
         $originalFile = Date('Ymd-His')."-".$originalFile;
         $directory="public/user";
         $path = $uploadedFile->storeAs($directory,$originalFile);
@@ -335,7 +370,7 @@ class UserController extends Controller
         $sysid  = isset($request->sysid) ? $request->sysid : '';
         $sysid  = strval($sysid);
         $uploadedFile = $request->file('file');
-        $originalFile = $uploadedFile->getClientOriginalName();        
+        $originalFile = $uploadedFile->getClientOriginalName();
         $originalFile = Date('Ymd-His')."-".$originalFile;
         $directory="public/sign";
         $path = $uploadedFile->storeAs($directory,$originalFile);

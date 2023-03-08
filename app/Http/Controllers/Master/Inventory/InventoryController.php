@@ -91,6 +91,28 @@ class InventoryController extends Controller
             ->leftjoin("m_items_group as e","a.item_subgroup_sysid","=","e.sysid")
             ->leftjoin("m_items_informations as f","a.sysid","=","f.sysid")
             ->where('a.sysid',$sysid)->first();
+        } else if ($group_name=='GENERAL'){
+            $data=Inventory::from('m_items as a')
+            ->selectRaw("a.sysid,a.item_code,a.item_code_old,a.item_name1,a.item_name2,a.mou_inventory,a.product_line,
+                a.is_sales,a.is_purchase,a.item_group_sysid,a.manufactur_sysid,a.prefered_vendor_sysid,a.is_active,a.update_userid,a.create_date,a.update_date,
+                b.manufactur_name as manufactur,a.inventory_group,a.is_generic,c.supplier_name as supplier,a.cogs,
+                a.on_hand,a.on_hand_unit,a.item_group_sysid,a.item_subgroup_sysid,d.group_name,e.group_name as subgroup_name,a.image_path")
+            ->leftjoin("m_manufactur as b","a.manufactur_sysid","=","b.sysid")
+            ->leftjoin("m_supplier as c","a.prefered_vendor_sysid","=","c.sysid")
+            ->leftjoin("m_items_group as d","a.item_group_sysid","=","d.sysid")
+            ->leftjoin("m_items_group as e","a.item_subgroup_sysid","=","e.sysid")
+            ->where('a.sysid',$sysid)->first();
+        } else if ($group_name=='NUTRITION'){
+            $data=Inventory::from('m_items as a')
+            ->selectRaw("a.sysid,a.item_code,a.item_code_old,a.item_name1,a.item_name2,a.mou_inventory,a.product_line,
+                a.is_sales,a.is_purchase,a.is_production,a.is_material,a.item_group_sysid,a.manufactur_sysid,a.prefered_vendor_sysid,a.is_active,a.update_userid,a.create_date,a.update_date,
+                b.manufactur_name as manufactur,a.inventory_group,a.is_generic,c.supplier_name as supplier,a.cogs,
+                a.on_hand,a.on_hand_unit,a.item_group_sysid,a.item_subgroup_sysid,d.group_name,e.group_name as subgroup_name,a.image_path")
+            ->leftjoin("m_manufactur as b","a.manufactur_sysid","=","b.sysid")
+            ->leftjoin("m_supplier as c","a.prefered_vendor_sysid","=","c.sysid")
+            ->leftjoin("m_items_group as d","a.item_group_sysid","=","d.sysid")
+            ->leftjoin("m_items_group as e","a.item_subgroup_sysid","=","e.sysid")
+            ->where('a.sysid',$sysid)->first();
         }
         return response()->success('Success',$data);
     }
@@ -105,9 +127,9 @@ class InventoryController extends Controller
             'item_name1'=>'bail|required',
             'mou_inventory'=>'bail|required',
         ],[
-            'item_code.required'=>'Kode inventory diisi',
-            'item_name1.required'=>'Nama inventory diisi',
-            'mou_inventory.required'=>'Satuan simpan diisi',
+            'item_code.required'=>'Kode inventory harus diisi',
+            'item_name1.required'=>'Nama inventory harus diisi',
+            'mou_inventory.required'=>'Satuan simpan harus diisi',
         ]);
         if ($validator->fails()) {
             return response()->error('',501,$validator->errors()->first());
@@ -128,12 +150,12 @@ class InventoryController extends Controller
             $data->price_rounded=isset($row['price_rounded']) ? $row['price_rounded'] :0;
             $data->manufactur_sysid=isset($row['manufactur_sysid']) ? $row['manufactur_sysid'] :-1;
             $data->prefered_vendor_sysid=isset($row['prefered_vendor_sysid']) ? $row['prefered_vendor_sysid'] :-1;
-            $data->is_price_rounded=$row['is_price_rounded'];
-            $data->price_rounded=$row['price_rounded'];
-            $data->is_sales=$row['is_sales'];
-            $data->is_purchase=$row['is_purchase'];
-            $data->is_material=$row['is_material'];
-            $data->is_production=$row['is_production'];
+            $data->is_price_rounded=isset($row['is_price_rounded']) ? $row['is_price_rounded'] : false;
+            $data->price_rounded=isset($row['price_rounded']) ? $row['price_rounded'] : false;
+            $data->is_sales=isset($row['is_sales']) ? $row['is_sales'] : false;
+            $data->is_purchase=isset($row['is_purchase']) ? $row['is_purchase'] : false;
+            $data->is_material=isset($row['is_material']) ? $row['is_material'] : false;
+            $data->is_production=isset($row['is_production']) ? $row['is_production'] : false;
             $data->item_group_sysid=$row['item_group_sysid'];
             $data->item_subgroup_sysid=$row['item_subgroup_sysid'];
             if ($row['inventory_group']=='MEDICAL'){

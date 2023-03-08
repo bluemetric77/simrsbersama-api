@@ -4,6 +4,8 @@ namespace App\Models\Config;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Config\USessions;
+
 
 class Users extends Model
 {
@@ -24,10 +26,14 @@ class Users extends Model
         return $user;
     }
 
-    public static function getuserIDfromJWT($jwt){
-        $data = decrypt($jwt);
-        $index = strpos($data,'##');
-        return substr($data,0,$index);
-    }
-    
+    public static function getUserinfo($token){
+        $session=USessions::selectRaw("user_sysid")->where('sign_code',$token)->first();
+        $user=Users::selectRaw("sysid,user_name,full_name,phone,password,user_level,failed_attemp,attemp_lock,ip_number,
+        last_login,sign,photo,email,is_group,is_active")
+        ->where('sysid',isset($session->user_sysid) ? $session->user_sysid :-1)
+        ->where('is_active',true)
+        ->where('is_group',false)->first();
+        return $user;
+  }
+
 }
