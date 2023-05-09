@@ -17,10 +17,6 @@ class HomeController extends Controller
         $token = $request->header('x_jwt') ;
         $group_id = isset($request->group_id) ? $request->group_id : -1;
         $session=Usessions::user($token);
-        //$session=USessions::from('o_sessions as a')
-        //    ->selectRaw("b.sysid,b.user_level")
-        //    ->join('o_users as b','a.user_sysid','=','b.sysid')
-        //    ->where('a.sign_code',$token)->first();
         if ($session) {
             $user_sysid =$session->sysid;
             $id=$request->id;
@@ -52,12 +48,12 @@ class HomeController extends Controller
 
     public function getItem(Request $request){
         $token = isset($request->jwt) ? $request->jwt :'';
-        $data=Usessions::user($token);
+        $data=Usessions::user($token);    
         if ($data) {
             $sysid=$data->sysid;
             if ($data->user_level=='USER'){
                 $item = Objects::selectRaw('sysid,sort_number,parent_sysid,object_level,title,icons,url_link,is_parent')
-                ->where('is_active',true)
+                ->where('is_active',1)
                 ->whereIn('sysid',function ($query) use ($sysid){
                     $query->select('object_sysid')
                         ->from('o_users_access')
@@ -66,7 +62,7 @@ class HomeController extends Controller
                         ->get();
                 });
                 $item=$item
-                    ->orwhere('is_parent',true)
+                    ->orwhere('is_parent',1)
                     ->orwhere('sort_number',9001)
                     ->distinct()
                     ->orderBy('sort_number')
@@ -74,7 +70,7 @@ class HomeController extends Controller
 
             } else {
                 $item = Objects::selectRaw('sysid,sort_number,parent_sysid,object_level,title,icons,url_link,is_parent')
-                ->where('is_active',true)
+                ->where('is_active',1)
                 ->distinct()
                 ->orderBy('sort_number')
                 ->get();

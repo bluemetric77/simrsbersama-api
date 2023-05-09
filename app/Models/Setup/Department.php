@@ -14,7 +14,7 @@ class Department extends Model
     const UPDATED_AT = 'update_date';
     protected $guarded =[];
     protected $casts = [
-        'is_active'=>'boolean',
-        'is_executive'=>'boolean'
+        'is_active'=>'string',
+        'is_executive'=>'string'
     ];
 }

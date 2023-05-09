@@ -26,7 +26,7 @@ class ParamedicSpecialistController extends Controller
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {
-                $q->where('specialist_name', 'ilike', $filter);
+                $q->where('specialist_name', 'like', $filter);
             });
         }
         $data = $data->orderBy($sortBy, ($descending) ? 'desc':'asc')->paginate($limit);

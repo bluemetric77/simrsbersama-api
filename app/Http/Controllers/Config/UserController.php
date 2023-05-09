@@ -35,9 +35,9 @@ class UserController extends Controller
         if (!($filter=='')){
             $filter='%'.trim($filter).'%';
             $data=$data->where(function($q) use ($filter) {
-                    $q->where('user_name','ilike',$filter)
-                    ->orwhere('full_name','ilike',$filter)
-                    ->orwhere('email','ilike',$filter);
+                    $q->where('user_name','like',$filter)
+                    ->orwhere('full_name','like',$filter)
+                    ->orwhere('email','like',$filter);
             });
         }
         if (!($user->user_level=='ADMIN')){
@@ -57,8 +57,7 @@ class UserController extends Controller
 
     public function profile(Request $request){
        $jwt=$request->header('x_jwt');
-       $md5=md5($jwt);
-       $data=USessions::selectRaw('user_sysid,user_name')->where('sign_code',$md5)->first();
+       $data=USessions::selectRaw('user_sysid,user_name')->where('sign_code',$jwt)->first();
        if ($data){
            $data=Users::selectRaw("sysid,user_name,full_name,email,photo,sign")
            ->where('sysid',$data->user_sysid)

@@ -21,8 +21,8 @@ class PriceLevelController extends Controller
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {
-                $q->where('level_code', 'ilike', $filter);
-                $q->orwhere('descriptions', 'ilike', $filter);
+                $q->where('level_code', 'like', $filter);
+                $q->orwhere('descriptions', 'like', $filter);
             });
         }
         $data = $data->orderBy($sortBy, ($descending) ? 'desc':'asc')->paginate($limit);
@@ -52,7 +52,7 @@ class PriceLevelController extends Controller
     public function edit(Request $request){
         $sysid=isset($request->sysid) ? $request->sysid :'-1';
         $data=PriceLevel::selectRaw("sysid,level_code,descriptions,is_active")
-        ->where('a.sysid',$sysid)->first();
+        ->where('sysid',$sysid)->first();
         return response()->success('Success',$data);
     }
 

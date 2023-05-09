@@ -28,8 +28,8 @@ class SupplierController extends Controller
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {
-                $q->where('supplier_code', 'ilike', $filter);
-                $q->orwhere('supplier_name', 'ilike', $filter);
+                $q->where('supplier_code', 'like', $filter);
+                $q->orwhere('supplier_name', 'like', $filter);
             });
         }
         $data = $data->orderBy($sortBy, ($descending) ? 'desc':'asc')->paginate($limit);

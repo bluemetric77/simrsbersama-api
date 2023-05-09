@@ -23,8 +23,8 @@ class ServiceClassController extends Controller
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {
-                $q->where('descriptions', 'ilike', $filter);
-                $q->orwhere('sort_name', 'ilike', $filter);
+                $q->where('descriptions', 'like', $filter);
+                $q->orwhere('sort_name', 'like', $filter);
             });
         }
         $data = $data->orderBy($sortBy, ($descending) ? 'desc':'asc')->paginate($limit);
@@ -124,8 +124,8 @@ class ServiceClassController extends Controller
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {
-                $q->where('descriptions', 'ilike', $filter);
-                $q->orwhere('sort_name', 'ilike', $filter);
+                $q->where('descriptions', 'like', $filter);
+                $q->orwhere('sort_name', 'like', $filter);
             });
         }
         $data = $data->orderBy($sortBy, ($descending) ? 'desc':'asc')->paginate($limit);

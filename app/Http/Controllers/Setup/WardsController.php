@@ -37,8 +37,8 @@ class WardsController extends Controller
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {
-                $q->where('a.ward_code', 'ilike', $filter);
-                $q->orwhere('a.ward_name', 'ilike', $filter);
+                $q->where('a.ward_code', 'like', $filter);
+                $q->orwhere('a.ward_name', 'like', $filter);
             });
         }
         $data = $data->orderBy('a.'.$sortBy, ($descending) ? 'desc':'asc')->paginate($limit);

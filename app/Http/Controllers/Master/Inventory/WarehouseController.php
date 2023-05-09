@@ -31,8 +31,8 @@ class WarehouseController extends Controller
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {
-                $q->where('loc_code', 'ilike', $filter);
-                $q->orwhere('location_name', 'ilike', $filter);
+                $q->where('loc_code', 'like', $filter);
+                $q->orwhere('location_name', 'like', $filter);
             });
         }
         $data = $data->orderBy($sortBy, ($descending) ? 'desc':'asc')->paginate($limit);

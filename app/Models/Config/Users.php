@@ -15,8 +15,8 @@ class Users extends Model
     const CREATED_AT = 'create_date';
     const UPDATED_AT = 'update_date';
     protected $casts=[
-        'is_active'=>'boolean',
-        'is_group'=>'boolean'
+        'is_active'=>'string',
+        'is_group'=>'string'
     ];
 
     public static function UserProfile($username){

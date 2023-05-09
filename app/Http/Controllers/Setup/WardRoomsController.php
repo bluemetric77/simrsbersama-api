@@ -39,7 +39,7 @@ class WardRoomsController extends Controller
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {
-                $q->where('a.room_number', 'ilike', $filter);
+                $q->where('a.room_number', 'like', $filter);
             });
         }
         $data = $data->orderBy('a.'.$sortBy, ($descending) ? 'desc':'asc')->paginate($limit);

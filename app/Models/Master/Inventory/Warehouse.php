@@ -14,9 +14,9 @@ class Warehouse extends Model
     const UPDATED_AT = 'update_date';
     protected $guarded =[];
     protected $casts = [
-        'is_received'=>'boolean',
-        'is_sales'=>'boolean',
-        'is_distribution'=>'boolean',
-        'is_active'=>'boolean',
+        'is_received'=>'string',
+        'is_sales'=>'string',
+        'is_distribution'=>'string',
+        'is_active'=>'string',
     ];
 }

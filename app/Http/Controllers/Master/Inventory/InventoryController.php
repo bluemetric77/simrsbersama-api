@@ -41,10 +41,10 @@ class InventoryController extends Controller
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {
-                $q->where('item_code', 'ilike', $filter);
-                $q->orwhere('item_code_old', 'ilike', $filter);
-                $q->orwhere('item_name1', 'ilike', $filter);
-                $q->orwhere('trademark', 'ilike', $filter);
+                $q->where('item_code', 'like', $filter);
+                $q->orwhere('item_code_old', 'like', $filter);
+                $q->orwhere('item_name1', 'like', $filter);
+                $q->orwhere('trademark', 'like', $filter);
             });
         }
         $data = $data->orderBy($sortBy, ($descending) ? 'desc':'asc')->paginate($limit);
