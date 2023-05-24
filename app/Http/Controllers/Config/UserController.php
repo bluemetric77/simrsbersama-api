@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
+
 class UserController extends Controller
 {
     private $salt='$2y$06$Pi1ND0N3S1A#&m3Rd3K4#@%!';

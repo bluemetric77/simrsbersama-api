@@ -69,7 +69,7 @@ class WardsController extends Controller
         $sysid=isset($request->sysid) ? $request->sysid :'-1';
         $data=Wards::from('m_wards as a')
             ->selectRaw("a.sysid,a.ward_code,a.ward_name,a.sort_name,a.is_executive,a.wh_medical,a.wh_general,a.wh_pharmacy,a.price_class,
-                a.is_active,CONCAT(b.loc_code,' - ',b.location_name) as wh_medical_name,CONCAT(c.loc_code,' - ',c.location_name) as wh_general_name,
+                a.is_active,CONCAT(b.location_code,' - ',b.location_name) as wh_medical_name,CONCAT(c.location_code,' - ',c.location_name) as wh_general_name,
                 CONCAT(d.dept_code,' - ',d.dept_name) as wh_pharmacy_name,e.dept_name as inpatient_service")
             ->leftjoin('m_warehouse as b','a.wh_medical','=','b.sysid')
             ->leftjoin('m_warehouse as c','a.wh_general','=','c.sysid')

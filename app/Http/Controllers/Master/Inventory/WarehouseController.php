@@ -20,18 +20,18 @@ class WarehouseController extends Controller
         $group_name=isset($request->group_name) ? $request->group_name : 'MEDICAL';
         $is_active=isset($request->is_active) ? $request->is_active : false;
         if ($is_active==true) {
-            $data=Warehouse::selectRaw("sysid,loc_code,location_name,is_received,is_sales,is_distribution")
+            $data=Warehouse::selectRaw("sysid,location_code,location_name,is_received,is_sales,is_distribution")
             ->where('warehouse_group',$group_name)
             ->where('is_active',true);
         } else {
-            $data=Warehouse::selectRaw("sysid,loc_code,location_name,inventory_account,cogs_account,expense_account,variant_account,
+            $data=Warehouse::selectRaw("sysid,location_code,location_name,inventory_account,cogs_account,expense_account,variant_account,
             warehouse_type,is_received,is_sales,is_distribution,is_active,update_userid,create_date,update_date")
             ->where('warehouse_group',$group_name);
         }
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {
-                $q->where('loc_code', 'like', $filter);
+                $q->where('location_code', 'like', $filter);
                 $q->orwhere('location_name', 'like', $filter);
             });
         }
@@ -61,7 +61,7 @@ class WarehouseController extends Controller
 
     public function edit(Request $request){
         $sysid=isset($request->sysid) ? $request->sysid :'-1';
-        $data=Warehouse::selectRaw("sysid,loc_code,location_name,inventory_account,cogs_account,expense_account,variant_account,
+        $data=Warehouse::selectRaw("sysid,location_code,location_name,inventory_account,cogs_account,expense_account,variant_account,
             warehouse_type,is_received,is_sales,is_distribution,is_active")
         ->where('sysid',$sysid)->first();
         return response()->success('Success',$data);
@@ -73,10 +73,10 @@ class WarehouseController extends Controller
         $opr = $info['operation'];
         $validator=Validator::make($row,
         [
-            'loc_code'=>'bail|required',
+            'location_code'=>'bail|required',
             'location_name'=>'bail|required',
         ],[
-            'loc_code.required'=>'Kode gudang diisi',
+            'location_code.required'=>'Kode gudang diisi',
             'location_name.required'=>'Nama gudang diisi',
         ]);
         if ($validator->fails()) {
@@ -90,7 +90,7 @@ class WarehouseController extends Controller
             } else if ($opr=='updated'){
                 $data = Warehouse::find($row['sysid']);
             }
-            $data->loc_code=$row['loc_code'];
+            $data->location_code=$row['location_code'];
             $data->location_name=$row['location_name'];
             $data->inventory_account=$row['inventory_account'];
             $data->cogs_account=$row['cogs_account'];

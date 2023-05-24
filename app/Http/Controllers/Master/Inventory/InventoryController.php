@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use PagesHelp;
 
 class InventoryController extends Controller
@@ -139,8 +140,10 @@ class InventoryController extends Controller
             if ($opr=='inserted'){
                 $data = new Inventory();
                 $data->inventory_group=$row['inventory_group'];
+                $data->uuid_rec= Str::uuid();
             } else if ($opr=='updated'){
                 $data = Inventory::find($row['sysid']);
+                $data->uuid_rec= Str::uuid();
             }
             $data->item_code=$row['item_code'];
             $data->item_name1=$row['item_name1'];
