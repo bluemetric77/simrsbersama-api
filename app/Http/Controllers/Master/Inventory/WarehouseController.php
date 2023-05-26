@@ -67,6 +67,25 @@ class WarehouseController extends Controller
         return response()->success('Success',$data);
     }
 
+    public function getlist(Request $request){
+        $type=isset($request->type) ? $request->type :'ALL';
+        $sysid=isset($request->sysid) ? $request->sysid :'-1';
+        $data=Warehouse::selectRaw("sysid,location_code,location_name")
+        ->where('is_active','1');
+        if ($type=='SALES') {
+            $data=$data->where('is_sales','1');
+        } else if ($type=='RECEIVE') {
+            $data=$data->where('is_received','1');            
+        } else if ($type=='DISTRIBUSTION') {
+            $data=$data->where('is_distribution','1');  
+        } else if ($type=='PRODUCTION') {
+            $data=$data->where('is_sales','1');            
+        }
+        $data=$data->orderBy('location_name')
+        ->get();
+        return response()->success('Success',$data);
+    }
+    
     public function store(Request $request){
         $info = $request->json()->all();
         $row = $info['data'];

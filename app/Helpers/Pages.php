@@ -29,6 +29,17 @@ class Pages
    {
       return null;
    }
+   
+   public static function Users(Request $request) {
+      $token = $request->header('x_jwt');
+      $ses=USessions::from('o_sessions as a')
+      ->selectRaw("a.sign_code,a.user_sysid,a.user_name,a.ip_number,a.expired_date,a.is_locked,
+      b.sysid,b.full_name,b.role,b.user_level,b.is_active,b.is_group,b.email")
+      ->join('o_users as b','a.user_sysid','=','b.sysid')
+      ->where('sign_code',$token)->first();
+      return isset($ses) ? $ses : null;
+   }
+
    public static function UserID($request){
       $token = $request->header('x_jwt');
       $ses=USessions::selectRaw("user_name")->where('sign_code',$token)->first();
@@ -178,11 +189,11 @@ class Pages
 
    public static function my_server_url()
     {
-      $profile=Parameters::selectRaw("value_string")
-      ->where('keyword','CONFIG_API')->first();
+      $profile=Parameters::selectRaw("key_value_nvarchar")
+      ->where('key_word','CONFIG_API')->first();
       $folder="";
       if ($profile){
-         $folder=$profile->value_string;
+         $folder=$profile->key_value_nvarchar;
          if (!($folder=="")){
             $folder="/".$folder;
          }

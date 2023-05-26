@@ -11,11 +11,11 @@ use Illuminate\Http\Request;
 class CompanyController extends Controller
 {
     public function profiles(){
-        $company = Parameters::select('keyword','value_string')
-         ->whereRaw("LEFT(keyword,7) = 'COMPANY'")
+        $company = Parameters::select('key_word','key_value_nvarchar')
+         ->whereRaw("LEFT(key_word,7) = 'COMPANY'")
          ->get();
          foreach ($company as $row) {
-            $profile[strtolower($row->keyword)]=$row->value_string;
+            $profile[strtolower($row->key_word)]=$row->key_value_nvarchar;
          }
         return response()->success('Success',$profile);
     }

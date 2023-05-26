@@ -52,7 +52,7 @@ class HomeController extends Controller
         if ($data) {
             $sysid=$data->sysid;
             if ($data->user_level=='USER'){
-                $item = Objects::selectRaw('sysid,sort_number,parent_sysid,object_level,title,icons,url_link,is_parent')
+                $item = Objects::selectRaw("sysid,sort_number,parent_sysid,object_level,title,icons,url_link,is_parent,CONCAT('g_',parent_sysid) as parent_sysid_text")
                 ->where('is_active',1)
                 ->whereIn('sysid',function ($query) use ($sysid){
                     $query->select('object_sysid')
@@ -69,7 +69,7 @@ class HomeController extends Controller
                     ->get();
 
             } else {
-                $item = Objects::selectRaw('sysid,sort_number,parent_sysid,object_level,title,icons,url_link,is_parent')
+                $item = Objects::selectRaw("sysid,sort_number,parent_sysid,object_level,title,icons,url_link,is_parent,CONCAT('g_',parent_sysid) as parent_sysid_text")
                 ->where('is_active',1)
                 ->distinct()
                 ->orderBy('sort_number')

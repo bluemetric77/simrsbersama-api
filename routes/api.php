@@ -90,6 +90,25 @@ Route::group(['prefix' => 'setup','middleware'=>'appauth'], function () {
         Route::delete('/rooms', 'destroy');
         Route::post('/rooms', 'store');
     });
+
+    Route::group(['prefix' => 'application'], function () {
+        Route::controller(\Setup\GeneralCodeGroupController::class)->group(function () {
+            Route::get('/group-code', 'index');
+        });
+        Route::controller(\Setup\GeneralCodeController::class)->group(function () {
+            Route::get('/standard-code', 'index');
+            Route::get('/standard-code/get', 'edit');
+            Route::get('/standard-code/open', 'open');
+            Route::delete('/standard-code', 'destroy');
+            Route::post('/standard-code', 'store');
+        });
+        Route::controller(\Config\ParametersController::class)->group(function () {
+            Route::get('/parameter', 'show');
+            Route::get('/parameter/get', 'get');
+            Route::get('/parameter/group', 'getgroup');
+            Route::post('/parameter', 'post');
+        });
+    });
 });
 
 Route::group(['prefix' => 'master','middleware'=>'appauth'], function () {
@@ -99,6 +118,7 @@ Route::group(['prefix' => 'master','middleware'=>'appauth'], function () {
             Route::get('/warehouse/get', 'edit');
             Route::delete('/warehouse', 'destroy');
             Route::post('/warehouse', 'store');
+            Route::get('/warehouse/list', 'getlist');
         });
         Route::controller(\Master\Inventory\ManufacturController::class)->group(function () {
             Route::get('/manufactur', 'index');
