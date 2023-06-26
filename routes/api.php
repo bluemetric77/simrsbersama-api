@@ -118,6 +118,10 @@ Route::group(['prefix' => 'inventory','middleware'=>'appauth'], function () {
             Route::get('purchase', 'index');
             Route::post('purchase', 'store');
             Route::get('purchase/get', 'get');        
+            Route::delete('purchase', 'destroy');  
+            Route::post('purchase/posting', 'posting');  
+            Route::post('purchase/unposting', 'unposting');  
+            Route::get('purchase/open', 'open');
         });
     });
 

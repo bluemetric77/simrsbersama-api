@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
 use PagesHelp;
 
 
-class PurchaseOrderController extends Controller
+class PurchaseReceiveController extends Controller
 {
     public function index(Request $request)
     {
@@ -335,34 +335,4 @@ class PurchaseOrderController extends Controller
         }
         return response()->success('Success', $data);
     }
-
-    public function open(Request $request)
-    {
-        $filter = $request->filter;
-        $limit = isset($request->limit) ? $request->limit : 100;
-        $sorting = ($request->descending == "true") ? "desc":"asc";
-        $sortBy = $request->sortBy;
-        $data=PurchaseOrder1::from('t_purchase_order1 as a')
-        ->selectRaw("a.uuid_rec,a.sysid,a.doc_number,a.ref_date,a.ref_number,a.partner_name,a.total,a.expired_date,a.location_id,b.location_name,
-        c.descriptions as purchase_type,d.descriptions as order_type,a.state,order_state,is_void,is_posted,posted_date,
-        a.term_id,a.item_group")
-        ->leftjoin("m_warehouse as b","a.location_id","=","b.sysid")
-        ->leftjoin("m_standard_code as c","a.purchase_type","=","c.standard_code")
-        ->leftjoin("m_standard_code as d","a.order_type","=","c.standard_code")
-        ->where('a.is_posted','1')
-        ->where('a.is_void','0')
-        ->where('a.expired_date','<=',Date('Y-m-d'));
-        if (!($filter == '')) {
-            $filter = '%' . trim($filter) . '%';
-            $data = $data->where(function ($q) use ($filter) {
-                $q->where('a.doc_number', 'like', $filter);
-                $q->orwhere('a.ref_number', 'like', $filter);
-                $q->orwhere('a.partner_name', 'like', $filter);
-                $q->orwhere('b.location_name', 'like', $filter);
-            });
-        }
-        $data = $data->orderBy($sortBy, $sorting)->paginate($limit);
-        return response()->success('Success', $data);
-    }
-
 }
