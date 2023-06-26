@@ -32,5 +32,6 @@ class Inventory extends Model
         'on_hand'=>'float',
         'on_hand_unit'=>'float',
         'is_active'=>'string',
+        'conversion'=>'float'
     ];
 }

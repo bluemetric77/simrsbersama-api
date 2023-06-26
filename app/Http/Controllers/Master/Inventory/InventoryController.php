@@ -18,21 +18,32 @@ class InventoryController extends Controller
     {
         $filter = $request->filter;
         $limit = isset($request->limit) ? $request->limit : 100;
-        $descending = $request->descending == "true";
+        $sorting = ($request->descending == "true") ? "desc":"asc";
         $sortBy = $request->sortBy;
         $group_name=isset($request->group_name) ? $request->group_name : 'MEDICAL';
         $is_active=isset($request->is_active) ? $request->is_active : false;
         if ($is_active==true) {
-            $data=Inventory::selectRaw("sysid,item_code,item_code_old,item_name1,trademark")
-            ->where('inventory_group',$group_name)
-            ->where('is_active',true);
+            $data=Inventory::from('m_items as a')
+            ->selectRaw("a.sysid,a.item_code,a.item_code_old,a.item_name1,a.item_name2,IFNULL(a.mou_purchase,'') as mou_purchase,a.conversion,
+                IFNULL(a.mou_inventory,'') as mou_inventory,a.product_line,
+                a.is_price_rounded,a.price_rounded,a.is_expired_control,a.item_group_sysid,
+                a.trademark,a.manufactur_sysid,a.prefered_vendor_sysid,a.is_active,a.update_userid,a.create_date,a.update_date,
+                b.manufactur_name as manufactur,a.inventory_group,a.is_generic,c.supplier_name as supplier,a.het_price,a.hna,a.cogs,
+                a.on_hand,a.on_hand_unit,a.item_group_sysid,a.item_subgroup_sysid,d.group_name,e.group_name as subgroup_name")
+            ->leftjoin("m_manufactur as b","a.manufactur_sysid","=","b.sysid")
+            ->leftjoin("m_supplier as c","a.prefered_vendor_sysid","=","c.sysid")
+            ->leftjoin("m_items_group as d","a.item_group_sysid","=","d.sysid")
+            ->leftjoin("m_items_group as e","a.item_subgroup_sysid","=","e.sysid")
+            ->leftjoin("m_items_informations as f","a.sysid","=","f.sysid")
+            ->where('a.inventory_group',$group_name)
+            ->where('a.is_active','1');
         } else {
             $data=Inventory::from('m_items as a')
             ->selectRaw("a.sysid,a.item_code,a.item_code_old,a.item_name1,a.mou_inventory,a.trademark,
                 a.is_sales,a.is_purchase,a.is_production,a.is_material,
                 a.is_active,a.update_userid,a.create_date,a.update_date,
                 b.manufactur_name as  manufactur,c.supplier_name,a.het_price,a.hna,on_hand,on_hand_unit,
-                a.item_group_sysid,a.item_subgroup_sysid,d.group_name,e.group_name as subgroup_name,a.image_path")
+                a.item_group_sysid,a.item_subgroup_sysid,d.group_name,e.group_name as subgroup_name,a.image_path,a.uuid_rec")
             ->leftjoin("m_manufactur as b","a.manufactur_sysid","=","b.sysid")
             ->leftjoin("m_supplier as c","a.prefered_vendor_sysid","=","c.sysid")
             ->leftjoin("m_items_group as d","a.item_group_sysid","=","d.sysid")
@@ -48,13 +59,13 @@ class InventoryController extends Controller
                 $q->orwhere('trademark', 'like', $filter);
             });
         }
-        $data = $data->orderBy($sortBy, ($descending) ? 'desc':'asc')->paginate($limit);
+        $data = $data->orderBy($sortBy, $sorting)->paginate($limit);
         return response()->success('Success', $data);
     }
 
     public function destroy(Request $request){
-        $sysid=isset($request->sysid) ? $request->sysid :'-1';
-        $data=Inventory::find($sysid);
+        $uuidrec=isset($request->uuidrec) ? $request->uuidrec :'-';
+        $data=Inventory::where('uuid_rec',$uuidrec)->first();
         if ($data) {
             DB::beginTransaction();
             try{
@@ -73,11 +84,11 @@ class InventoryController extends Controller
     }
 
     public function edit(Request $request){
-        $sysid=isset($request->sysid) ? $request->sysid :'-1';
+        $uuidrec=isset($request->uuidrec) ? $request->uuidrec :'-';
         $group_name=isset($request->group_name) ? $request->group_name : 'MEDICAL';
         if ($group_name=='MEDICAL'){
             $data=Inventory::from('m_items as a')
-            ->selectRaw("a.sysid,a.item_code,a.item_code_old,a.item_name1,a.item_name2,a.mou_inventory,a.product_line,
+            ->selectRaw("a.uuid_rec,a.item_code,a.item_code_old,a.item_name1,a.item_name2,a.mou_inventory,a.product_line,
                 a.is_price_rounded,a.price_rounded,a.is_expired_control,a.is_sales,a.is_purchase,a.is_production,a.is_material,
                 a.is_consignment,a.is_formularium,a.is_employee,a.is_inhealth,a.is_bpjs,a.is_employee,a.is_national,a.item_group_sysid,
                 a.trademark,a.manufactur_sysid,a.prefered_vendor_sysid,a.is_active,a.update_userid,a.create_date,a.update_date,
@@ -91,10 +102,10 @@ class InventoryController extends Controller
             ->leftjoin("m_items_group as d","a.item_group_sysid","=","d.sysid")
             ->leftjoin("m_items_group as e","a.item_subgroup_sysid","=","e.sysid")
             ->leftjoin("m_items_informations as f","a.sysid","=","f.sysid")
-            ->where('a.sysid',$sysid)->first();
+            ->where('a.uuid_rec',$uuidrec)->first();
         } else if ($group_name=='GENERAL'){
             $data=Inventory::from('m_items as a')
-            ->selectRaw("a.sysid,a.item_code,a.item_code_old,a.item_name1,a.item_name2,a.mou_inventory,a.product_line,
+            ->selectRaw("a.uuid_rec,a.item_code,a.item_code_old,a.item_name1,a.item_name2,a.mou_inventory,a.product_line,
                 a.is_sales,a.is_purchase,a.item_group_sysid,a.manufactur_sysid,a.prefered_vendor_sysid,a.is_active,a.update_userid,a.create_date,a.update_date,
                 b.manufactur_name as manufactur,a.inventory_group,a.is_generic,c.supplier_name as supplier,a.cogs,
                 a.on_hand,a.on_hand_unit,a.item_group_sysid,a.item_subgroup_sysid,d.group_name,e.group_name as subgroup_name,a.image_path")
@@ -102,10 +113,10 @@ class InventoryController extends Controller
             ->leftjoin("m_supplier as c","a.prefered_vendor_sysid","=","c.sysid")
             ->leftjoin("m_items_group as d","a.item_group_sysid","=","d.sysid")
             ->leftjoin("m_items_group as e","a.item_subgroup_sysid","=","e.sysid")
-            ->where('a.sysid',$sysid)->first();
+            ->where('a.uuid_rec',$uuidrec)->first();
         } else if ($group_name=='NUTRITION'){
             $data=Inventory::from('m_items as a')
-            ->selectRaw("a.sysid,a.item_code,a.item_code_old,a.item_name1,a.item_name2,a.mou_inventory,a.product_line,
+            ->selectRaw("a.uuid_rec,a.item_code,a.item_code_old,a.item_name1,a.item_name2,a.mou_inventory,a.product_line,
                 a.is_sales,a.is_purchase,a.is_production,a.is_material,a.item_group_sysid,a.manufactur_sysid,a.prefered_vendor_sysid,a.is_active,a.update_userid,a.create_date,a.update_date,
                 b.manufactur_name as manufactur,a.inventory_group,a.is_generic,c.supplier_name as supplier,a.cogs,
                 a.on_hand,a.on_hand_unit,a.item_group_sysid,a.item_subgroup_sysid,d.group_name,e.group_name as subgroup_name,a.image_path")
@@ -113,7 +124,7 @@ class InventoryController extends Controller
             ->leftjoin("m_supplier as c","a.prefered_vendor_sysid","=","c.sysid")
             ->leftjoin("m_items_group as d","a.item_group_sysid","=","d.sysid")
             ->leftjoin("m_items_group as e","a.item_subgroup_sysid","=","e.sysid")
-            ->where('a.sysid',$sysid)->first();
+            ->where('a.uuid_rec',$uuidrec)->first();
         }
         return response()->success('Success',$data);
     }
@@ -142,7 +153,7 @@ class InventoryController extends Controller
                 $data->inventory_group=$row['inventory_group'];
                 $data->uuid_rec= Str::uuid();
             } else if ($opr=='updated'){
-                $data = Inventory::find($row['sysid']);
+                $data = Inventory::where('uuid_rec',$row['uuid_rec'])->first();
                 $data->uuid_rec= Str::uuid();
             }
             $data->item_code=$row['item_code'];
@@ -175,6 +186,7 @@ class InventoryController extends Controller
             $data->is_active=$row['is_active'];
             $data->update_userid=PagesHelp::UserID($request);
             $data->save();
+
             $sysid=$data->sysid;
             if ($row['inventory_group']=='MEDICAL'){
                 $drugs=DrugInformations::find($sysid);
@@ -207,13 +219,14 @@ class InventoryController extends Controller
             return response()->success('Success','Simpan data berhasil');
         } catch(Exception $error) {
             DB::rollback();    
+            return response()->error('',501,$error);
         }    
     }
     public function download(Request $request)
     {
-        $sysid = isset($request->sysid) ? $request->sysid : -1;
+        $uuidrec = isset($request->uuidrec) ? $request->uuidrec :'-';
         $document=isset($request->document) ? $request->document :'';
-        $data=Inventory::selectRaw("COALESCE(image_path,'') as image")->where('sysid',$sysid)->first();
+        $data=Inventory::selectRaw("COALESCE(image_path,'') as image")->where('uuid_rec',$uuidrec)->first();
         if ($data) {
             if ($data->image!=''){
                 //$publicPath = \Storage::url($data->image);
@@ -224,4 +237,29 @@ class InventoryController extends Controller
               return response()->error('',301,'Dokumen tidak ditemukan');
         }
     }
+
+    public function get_item(Request $request){
+        $item_code=isset($request->item_code) ? $request->item_code :'-';
+        $group_name=isset($request->group_name) ? $request->group_name : 'MEDICAL';
+        $data=Inventory::from('m_items as a')
+        ->selectRaw("a.sysid,a.item_code,a.item_code_old,a.item_name1,a.item_name2,IFNULL(a.mou_purchase,'') as mou_purchase,a.conversion,
+            IFNULL(a.mou_inventory,'') as mou_inventory,a.product_line,
+            a.is_price_rounded,a.price_rounded,a.is_expired_control,a.is_sales,a.is_purchase,a.is_production,a.is_material,
+            a.is_consignment,a.is_formularium,a.is_employee,a.is_inhealth,a.is_bpjs,a.is_employee,a.is_national,a.item_group_sysid,
+            a.trademark,a.manufactur_sysid,a.prefered_vendor_sysid,a.is_active,a.update_userid,a.create_date,a.update_date,
+            b.manufactur_name as manufactur,a.inventory_group,a.is_generic,c.supplier_name as supplier,a.het_price,a.hna,a.cogs,
+            a.on_hand,a.on_hand_unit,a.item_group_sysid,a.item_subgroup_sysid,d.group_name,e.group_name as subgroup_name,
+            COALESCE(f.generic_name,'') as generic_name,COALESCE(f.rate,0) as rate,COALESCE(f.units,'') as units,COALESCE(f.forms,'') as forms,
+            COALESCE(f.special_instruction,'') as special_instruction,COALESCE(f.storage_instruction,'') as storage_instruction,
+            COALESCE(a.is_generic,false) as is_generic,COALESCE(f.medical_uses,'') as medical_uses,a.image_path")
+        ->leftjoin("m_manufactur as b","a.manufactur_sysid","=","b.sysid")
+        ->leftjoin("m_supplier as c","a.prefered_vendor_sysid","=","c.sysid")
+        ->leftjoin("m_items_group as d","a.item_group_sysid","=","d.sysid")
+        ->leftjoin("m_items_group as e","a.item_subgroup_sysid","=","e.sysid")
+        ->leftjoin("m_items_informations as f","a.sysid","=","f.sysid")
+        ->where('a.item_code',$item_code)
+        ->where('a.inventory_group',$group_name)->first();
+        return response()->success('Success',$data);
+    }
+    
 }

@@ -22,7 +22,7 @@ class GeneralCodeController extends Controller
         $sortBy = $request->sortBy;
         $parent_id = isset($request->parent_id) ? $request->parent_id :'-1';
         $data=StandardCode::from('m_standard_code as a')
-        ->selectRaw("a.sysid,a.standard_code,a.descriptions,a.parent_id,a.is_active,a.update_date,a.create_date,
+        ->selectRaw("a.sysid,a.standard_code,a.descriptions,a.parent_id,a.value,a.is_active,a.update_date,a.create_date,
         a.uuid_rec,c.full_name as create_by,d.full_name as update_by")
         ->leftjoin('m_standard_code_group as b','a.parent_id','=','b.sysid')
         ->leftjoin('o_users as c','a.create_by','=','c.sysid')
@@ -63,7 +63,7 @@ class GeneralCodeController extends Controller
     public function edit(Request $request){
         $uuidrec=isset($request->uuidrec) ? $request->uuidrec :'N/A';
         $data=StandardCode::from('m_standard_code as a')
-        ->selectRaw("a.sysid,a.standard_code,a.descriptions,a.parent_id,a.is_active,a.update_date,a.create_date,
+        ->selectRaw("a.sysid,a.standard_code,a.descriptions,a.parent_id,a.value,a.is_active,a.update_date,a.create_date,
         a.uuid_rec,b.parent_code,b.descriptions as parent_name")
         ->leftjoin('m_standard_code_group as b','a.parent_id','=','b.sysid')
         ->where('a.uuid_rec',$uuidrec)->first();
@@ -100,6 +100,7 @@ class GeneralCodeController extends Controller
             $data->uuid_rec=Str::uuid();
             $data->standard_code=$row['standard_code'];
             $data->descriptions=$row['descriptions'];
+            $data->value=$row['value'];
             $data->is_active=isset($row['is_active']) ? $row['is_active'] :'1';
             $data->save();
             PagesHelp::write_log($request,$data->sysid,$data->standard_code,'Add/Update recods');
@@ -107,6 +108,28 @@ class GeneralCodeController extends Controller
             return response()->success('Success','Simpan data berhasil');
         } catch(Exception $error) {
             DB::rollback();    
+            return response()->error('Error',201,$error);
         }    
+    }
+
+    public function get_code(Request $request){
+        $parent=isset($request->parent_code) ? $request->parent_code : '';
+        
+        $group=StandardGroupCode::selectRaw("IFNULL(auto_sortable,1) as auto_sortable")
+        ->where('parent_code',$parent)->first();
+
+        $data=StandardGroupCode::from('m_standard_code_group as a')
+        ->selectRaw("b.standard_code,b.descriptions,b.value")
+        ->join('m_standard_code as b','a.sysid','=','b.parent_id')
+        ->where('a.parent_code',$parent);
+
+        if ($group->auto_sortable=='1') {
+            $data=$data->orderBy('b.standard_code','asc')
+            ->get();
+        } else {
+            $data=$data->orderBy('b.sort_id','asc')
+            ->get();            
+        }
+        return response()->success('Success',$data);
     }
 }

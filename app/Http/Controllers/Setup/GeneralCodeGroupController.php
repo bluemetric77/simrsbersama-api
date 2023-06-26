@@ -82,6 +82,7 @@ class GeneralCodeGroupController extends Controller
             }
             $data->parent_code=$row['parent_code'];
             $data->descriptions=$row['descriptions'];
+            $data->value=$row['value'];
             $data->save();
             PagesHelp::write_log($request,$data->sysid,$data->parent_code,'Add/Update recods');
             DB::commit();

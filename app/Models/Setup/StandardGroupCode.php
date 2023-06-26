@@ -15,6 +15,7 @@ class StandardGroupCode extends Model
     const UPDATED_AT = 'update_date';
     protected $guarded =[];
     protected $casts =[
-        'is_active'=>'string'
+        'is_active'=>'string',
+        'auto_sortable'=>'string'
     ];
 }

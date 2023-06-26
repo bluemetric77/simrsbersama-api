@@ -101,6 +101,7 @@ Route::group(['prefix' => 'setup','middleware'=>'appauth'], function () {
             Route::get('/standard-code/open', 'open');
             Route::delete('/standard-code', 'destroy');
             Route::post('/standard-code', 'store');
+            Route::get('/standard-code/list', 'get_code');
         });
         Route::controller(\Config\ParametersController::class)->group(function () {
             Route::get('/parameter', 'show');
@@ -109,6 +110,17 @@ Route::group(['prefix' => 'setup','middleware'=>'appauth'], function () {
             Route::post('/parameter', 'post');
         });
     });
+});
+
+Route::group(['prefix' => 'inventory','middleware'=>'appauth'], function () {
+    Route::group(['prefix' => 'order'], function () {
+        Route::controller(\Inventory\PurchaseOrderController::class)->group(function () {
+            Route::get('purchase', 'index');
+            Route::post('purchase', 'store');
+            Route::get('purchase/get', 'get');        
+        });
+    });
+
 });
 
 Route::group(['prefix' => 'master','middleware'=>'appauth'], function () {
@@ -152,6 +164,8 @@ Route::group(['prefix' => 'master','middleware'=>'appauth'], function () {
             Route::delete('/inventory-item', 'destroy');
             Route::post('/inventory-item', 'store');
             Route::get('/inventory-item/image/download', 'download');
+            Route::get('/inventory-item/open', 'open');
+            Route::get('/inventory-item/getitem', 'get_item');
         });
     });
 
