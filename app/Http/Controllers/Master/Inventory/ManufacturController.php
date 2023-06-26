@@ -28,8 +28,8 @@ class ManufacturController extends Controller
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {
-                $q->where('manufactur_code', 'ilike', $filter);
-                $q->orwhere('manufactur_name', 'ilike', $filter);
+                $q->where('manufactur_code', 'like', $filter);
+                $q->orwhere('manufactur_name', 'like', $filter);
             });
         }
         $data = $data->orderBy($sortBy, ($descending) ? 'desc':'asc')->paginate($limit);

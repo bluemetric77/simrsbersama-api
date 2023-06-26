@@ -19,8 +19,8 @@ class USessions extends Model
         $user=Users::selectRaw("sysid,user_name,full_name,phone,password,user_level,failed_attemp,attemp_lock,ip_number,
         last_login,sign,photo,email,is_group,is_active")
         ->where('sysid',isset($session->user_sysid) ? $session->user_sysid :-1)
-        ->where('is_active',true)
-        ->where('is_group',false)->first();
+        ->where('is_active',1)
+        ->where('is_group',0)->first();
         return $user;
   }
 }

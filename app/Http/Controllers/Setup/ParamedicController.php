@@ -40,9 +40,9 @@ class ParamedicController extends Controller
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {
-                $q->where('a.paramedic_code', 'ilike', $filter);
-                $q->orwhere('a.paramedic_name', 'ilike', $filter);
-                $q->orwhere('b.specialist_name', 'ilike', $filter);
+                $q->where('a.paramedic_code', 'like', $filter);
+                $q->orwhere('a.paramedic_name', 'like', $filter);
+                $q->orwhere('b.specialist_name', 'like', $filter);
             });
         }
         if ($sortBy=='specialist_name') {

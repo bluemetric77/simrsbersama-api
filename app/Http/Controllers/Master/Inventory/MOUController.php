@@ -27,8 +27,8 @@ class MOUController extends Controller
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {
-                $q->where('mou_name', 'ilike', $filter);
-                $q->orwhere('descriptions', 'ilike', $filter);
+                $q->where('mou_name', 'like', $filter);
+                $q->orwhere('descriptions', 'like', $filter);
             });
         }
         $data = $data->orderBy($sortBy, ($descending) ? 'desc':'asc')->paginate($limit);

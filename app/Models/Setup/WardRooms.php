@@ -14,7 +14,7 @@ class WardRooms extends Model
     const UPDATED_AT = 'update_date';
     protected $guarded =[];
     protected $casts = [
-        'is_active'=>'boolean',
-        'is_temporary'=>'boolean'
+        'is_active'=>'string',
+        'is_temporary'=>'string'
     ];
 }

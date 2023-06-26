@@ -29,6 +29,17 @@ class Pages
    {
       return null;
    }
+   
+   public static function Users(Request $request) {
+      $token = $request->header('x_jwt');
+      $ses=USessions::from('o_sessions as a')
+      ->selectRaw("a.sign_code,a.user_sysid as sysid,a.user_name,a.ip_number,a.expired_date,a.is_locked,
+      b.sysid,b.full_name,b.role,b.user_level,b.is_active,b.is_group,b.email")
+      ->join('o_users as b','a.user_sysid','=','b.sysid')
+      ->where('sign_code',$token)->first();
+      return isset($ses) ? $ses : null;
+   }
+
    public static function UserID($request){
       $token = $request->header('x_jwt');
       $ses=USessions::selectRaw("user_name")->where('sign_code',$token)->first();
@@ -40,13 +51,12 @@ class Pages
       return $data;
    }
 
-   public static function GetDocseries($poolcode='-',$prefix,$docDate){
+   public static function GetDocseries($prefix,$docDate){
 		$realdate = date_create($docDate);
 		$year_period = date_format($realdate, 'Y');
       $month_period = date_format($realdate, 'm');
       $data= DB::table('o_series_document')
          ->select('prefix_code','year_period','month_period','numbering')
-         ->where('pool_code',$poolcode)
          ->where('prefix_code',$prefix)
          ->where('year_period',$year_period)
          ->where('month_period',$month_period)
@@ -54,8 +64,7 @@ class Pages
       if ($data==null) {
          DB::table('o_series_document')
          ->insert(
-            ['pool_code'=>$poolcode,
-             'prefix_code'=>$prefix,
+            ['prefix_code'=>$prefix,
              'year_period'=>$year_period,
              'month_period'=>$month_period,
              'numbering'=>1]
@@ -65,18 +74,13 @@ class Pages
       }  else {
          $counter=intval($data->numbering)+1;
          DB::table('o_series_document')
-            ->where('pool_code',$poolcode)
             ->where('prefix_code',$prefix)
             ->where('year_period',$year_period)
             ->where('month_period',$month_period)
             ->update(['numbering'=>$counter]);
       }
       $year = substr($year_period, 2, 2);
-      if (($poolcode=='-') || ($poolcode=='')) {
-         $series = $prefix . '-' . $year . $month_period . str_pad((string) $counter, 4, '0', STR_PAD_LEFT);
-      } else {
-         $series = $poolcode.'.'.$prefix . '-' . $year . $month_period . str_pad((string) $counter, 4, '0', STR_PAD_LEFT);
-      }
+      $series = $prefix . '-' . $year . $month_period . str_pad((string) $counter, 4, '0', STR_PAD_LEFT);
       return $series;
    }
    public static function GetVoucherseries($prefix,$docDate){
@@ -178,11 +182,11 @@ class Pages
 
    public static function my_server_url()
     {
-      $profile=Parameters::selectRaw("value_string")
-      ->where('keyword','CONFIG_API')->first();
+      $profile=Parameters::selectRaw("key_value_nvarchar")
+      ->where('key_word','CONFIG_API')->first();
       $folder="";
       if ($profile){
-         $folder=$profile->value_string;
+         $folder=$profile->key_value_nvarchar;
          if (!($folder=="")){
             $folder="/".$folder;
          }

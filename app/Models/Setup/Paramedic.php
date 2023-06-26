@@ -14,11 +14,11 @@ class Paramedic extends Model
     const UPDATED_AT = 'update_date';
     protected $guarded =[];
     protected $casts = [
-        'is_active'=>'boolean',
-        'is_permanent'=>'boolean',
-        'is_internal'=>'boolean',
-        'is_have_tax'=>'boolean',
-        'is_transfer'=>'boolean',
-        'is_email_reports'=>'boolean',
+        'is_active'=>'string',
+        'is_permanent'=>'string',
+        'is_internal'=>'string',
+        'is_have_tax'=>'string',
+        'is_transfer'=>'string',
+        'is_email_reports'=>'string',
     ];
 }

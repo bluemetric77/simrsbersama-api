@@ -1,15 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\Setup;
+namespace App\Http\Controllers\setup;
 
-use App\Models\Setup\PriceLevel;
-use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use PagesHelp;
+use App\Models\Setup\StandardGroupCode;
 
-class PriceLevelController extends Controller
+class GeneralCodeGroupController extends Controller
 {
     public function index(Request $request)
     {
@@ -17,25 +14,27 @@ class PriceLevelController extends Controller
         $limit = isset($request->limit) ? $request->limit : 100;
         $descending = $request->descending == "true";
         $sortBy = $request->sortBy;
-        $data=PriceLevel::selectRaw("sysid,level_code,descriptions,is_active,update_userid,create_date,update_date");
+        $parent_id = isset($request->parent_id) ? $request->parent_id :'-1';
+        $data=StandardGroupCode::from('m_standard_code_group as a')
+        ->selectRaw("a.sysid,a.parent_code,a.descriptions,a.module,a.uuid_rec");
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {
-                $q->where('level_code', 'like', $filter);
-                $q->orwhere('descriptions', 'like', $filter);
+                $q->where('a.parent_code', 'like', $filter);
+                $q->orwhere('a.descriptions', 'like', $filter);
             });
         }
-        $data = $data->orderBy($sortBy, ($descending) ? 'desc':'asc')->paginate($limit);
+        $data = $data->orderBy('a.'.$sortBy, ($descending) ? 'desc':'asc')->paginate($limit);
         return response()->success('Success', $data);
     }
 
     public function destroy(Request $request){
-        $sysid=isset($request->sysid) ? $request->sysid :'-1';
-        $data=PriceLevel::find($sysid);
+        $uuidrec=isset($request->uuidrec) ? $request->uuidrec :'N/A';
+        $data=StandardGroupCode::where('uuid_rec',$uuidrec)->first();
         if ($data) {
             DB::beginTransaction();
             try{
-                PagesHelp::write_log($request,$data->sysid,$data->dept_code,'Deleting recods');
+                PagesHelp::write_log($request,$data->sysid,$data->parent_code,'Deleting records');
                 $data->delete();
                 DB::commit();
                 return response()->success('Success','Hapus data berhasil');
@@ -50,23 +49,23 @@ class PriceLevelController extends Controller
     }
 
     public function edit(Request $request){
-        $sysid=isset($request->sysid) ? $request->sysid :'-1';
-        $data=PriceLevel::selectRaw("sysid,level_code,descriptions,is_active")
-        ->where('sysid',$sysid)->first();
+        $uuidrec=isset($request->uuidrec) ? $request->uuidrec :'N/A';
+        $data=StandardGroupCode::from('m_standard_code_group as a')
+        ->selectRaw("a.sysid,a.parent_code,a.descriptions,a.module,a.uuid_rec")
+        ->where('a.uuid_rec',$uuidrec)->first();
         return response()->success('Success',$data);
     }
 
     public function store(Request $request){
         $info = $request->json()->all();
         $row = $info['data'];
-        $opr = $info['operation'];
         $validator=Validator::make($row,
         [
-            'level_code'=>'bail|required',
+            'parent_code'=>'bail|required',
             'descriptions'=>'bail|required',
         ],[
-            'level_code.required'=>'Level tarif harus diisi',
-            'descriptions.required'=>'Nama level tarif harud  diisi',
+            'parent_code.required'=>'Kode harus diisi',
+            'descriptions.required'=>'keterangan kode diisi',
         ]);
         if ($validator->fails()) {
             return response()->error('',501,$validator->errors()->first());
@@ -74,20 +73,23 @@ class PriceLevelController extends Controller
         DB::beginTransaction();
         try {
             if ($opr=='inserted'){
-                $data = new PriceLevel();
+                $data = new StandardGroupCode();
+                $data->uuid_rec=Str::uuid();
+                $data->create_by=PagesHelp::Users($request)->sysid;                
             } else if ($opr=='updated'){
-                $data = PriceLevel::find($row['sysid']);
+                $data = StandardGroupCode::where('uuid_rec',$row['uuid_rec'])->first();
+                $data->update_by=PagesHelp::Users($request)->sysid;
             }
-            $data->level_code=$row['level_code'];
+            $data->parent_code=$row['parent_code'];
             $data->descriptions=$row['descriptions'];
-            $data->is_active=$row['is_active'];
-            $data->update_userid=PagesHelp::UserID($request);
+            $data->value=$row['value'];
             $data->save();
-            PagesHelp::write_log($request,$data->sysid,$data->dept_code,'Add/Update recods');
+            PagesHelp::write_log($request,$data->sysid,$data->parent_code,'Add/Update recods');
             DB::commit();
             return response()->success('Success','Simpan data berhasil');
         } catch(Exception $error) {
             DB::rollback();    
         }    
     }
+
 }

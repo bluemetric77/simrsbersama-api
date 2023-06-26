@@ -21,8 +21,8 @@ class ParamedicPriceGroupController extends Controller
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {
-                $q->where('group_code', 'ilike', $filter);
-                $q->orwhere('group_name', 'ilike', $filter);
+                $q->where('group_code', 'like', $filter);
+                $q->orwhere('group_name', 'like', $filter);
             });
         }
         $data = $data->orderBy($sortBy, ($descending) ? 'desc':'asc')->paginate($limit);

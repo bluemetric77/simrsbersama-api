@@ -12,6 +12,8 @@ class Parameters extends Model
     const CREATED_AT = 'create_date';
     const UPDATED_AT = 'update_date';
     protected $casts = [
-        'is_selected' => 'string'
+        'is_selected' => 'string',
+        'key_value_boolean'=>'string',
+        'key_value_decimal'=>'float'
     ];    
 }

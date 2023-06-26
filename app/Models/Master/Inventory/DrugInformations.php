@@ -12,6 +12,6 @@ class DrugInformations extends Model
     public $timestamps = false;
     protected $guarded =[];
     protected $casts = [
-        'is_generic'=>'boolean',
+        'is_generic'=>'string',
     ];
 }
