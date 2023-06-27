@@ -113,18 +113,26 @@ Route::group(['prefix' => 'setup','middleware'=>'appauth'], function () {
 });
 
 Route::group(['prefix' => 'inventory','middleware'=>'appauth'], function () {
-    Route::group(['prefix' => 'order'], function () {
+    Route::group(['prefix' => 'purchase'], function () {
         Route::controller(\Inventory\PurchaseOrderController::class)->group(function () {
-            Route::get('purchase', 'index');
-            Route::post('purchase', 'store');
-            Route::get('purchase/get', 'get');        
-            Route::delete('purchase', 'destroy');  
-            Route::post('purchase/posting', 'posting');  
-            Route::post('purchase/unposting', 'unposting');  
-            Route::get('purchase/open', 'open');
+            Route::get('order', 'index');
+            Route::post('order', 'store');
+            Route::get('order/get', 'get');        
+            Route::delete('order', 'destroy');  
+            Route::post('order/posting', 'posting');  
+            Route::post('order/unposting', 'unposting');  
+            Route::get('order/open', 'open');
+            Route::get('order/detail', 'detail');
+        });
+        Route::controller(\Inventory\PurchaseReceiveController::class)->group(function () {
+            Route::get('receive', 'index');
+            Route::post('receive', 'store');
+            Route::get('receive/get', 'get');        
+            Route::delete('receive', 'destroy');  
+            Route::get('receive/open', 'open');
+            Route::get('receive/detail', 'detail');
         });
     });
-
 });
 
 Route::group(['prefix' => 'master','middleware'=>'appauth'], function () {

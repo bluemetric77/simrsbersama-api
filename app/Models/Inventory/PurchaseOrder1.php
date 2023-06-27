@@ -23,7 +23,14 @@ class PurchaseOrder1 extends Model
         'discount2'=>'float',
         'tax'=>'float',
         'total'=>'float',
-        'is_tax'=>'string'
+        'is_tax'=>'string',
+        'conversion'=>'float',
+        'qty_order'=>'float',
+        'price'=>'float',
+        'prc_discount1'=>'float',
+        'prc_discount2'=>'float',
+        'prc_tax'=>'float',
+        'qty_received'=>'float',        
     ];
 
     public static function GenerateNumber($ref_date){

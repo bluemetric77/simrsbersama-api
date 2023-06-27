@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use PagesHelp;
 
-class PurchaseOrder1 extends Model
+class PurchaseReceive1 extends Model
 {
     use HasFactory;
     protected $table = 't_purchase_receive1';

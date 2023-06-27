@@ -343,7 +343,7 @@ class PurchaseOrderController extends Controller
         $sorting = ($request->descending == "true") ? "desc":"asc";
         $sortBy = $request->sortBy;
         $data=PurchaseOrder1::from('t_purchase_order1 as a')
-        ->selectRaw("a.uuid_rec,a.sysid,a.doc_number,a.ref_date,a.ref_number,a.partner_name,a.total,a.expired_date,a.location_id,b.location_name,
+        ->selectRaw("a.uuid_rec,a.sysid,a.doc_number,a.ref_date,a.ref_number,a.partner_id,a.partner_name,a.total,a.expired_date,a.location_id,b.location_name,
         c.descriptions as purchase_type,d.descriptions as order_type,a.state,order_state,is_void,is_posted,posted_date,
         a.term_id,a.item_group")
         ->leftjoin("m_warehouse as b","a.location_id","=","b.sysid")
@@ -364,5 +364,17 @@ class PurchaseOrderController extends Controller
         $data = $data->orderBy($sortBy, $sorting)->paginate($limit);
         return response()->success('Success', $data);
     }
+
+    public function detail(Request $request)
+    {
+        $uuidrec=isset($request->uuid_rec) ? $request->uuid_rec :'-';    
+        $data=PurchaseOrder1::from('t_purchase_order1 as a')
+        ->selectRaw("b.sysid,b.line_no,b.item_id,b.item_code,b.item_name,b.mou_purchase,b.conversion,b.mou_inventory,
+        b.qty_order,b.qty_received,b.price,b.prc_discount1,b.prc_discount2,b.prc_tax")
+        ->join('t_purchase_order2 as b','a.sysid','=','b.sysid')
+        ->where('a.uuid_rec',$uuidrec)->get();
+        return response()->success('Success', $data);
+    }
+
 
 }
