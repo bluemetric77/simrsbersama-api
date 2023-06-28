@@ -236,7 +236,7 @@ return [
         'PagesHelp' => App\Helpers\Pages::class,
         'Accounting' => App\Helpers\Accounting::class,
         'AutoJurnal' => App\Helpers\AutoJurnal::class,
-
+        'HelpersInventory' => App\Helpers\HelpersInventory::class,
     ],
 
 ];

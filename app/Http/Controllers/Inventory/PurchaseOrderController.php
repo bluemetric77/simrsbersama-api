@@ -20,7 +20,7 @@ class PurchaseOrderController extends Controller
     public function index(Request $request)
     {
         $filter = $request->filter;
-        $limit = isset($request->limit) ? $request->limit : 100;
+        $limit = isset($request->limit) ? $request->limit : 50;
         $sorting = ($request->descending == "true") ? "desc":"asc";
         $sortBy = $request->sortBy;
         $date1 = isset($request->date1) ? $request->date1 :'1899-01-01';
@@ -30,9 +30,9 @@ class PurchaseOrderController extends Controller
         c.descriptions as purchase_type,d.descriptions as order_type,a.state,order_state,is_void,is_posted")
         ->leftjoin("m_warehouse as b","a.location_id","=","b.sysid")
         ->leftjoin("m_standard_code as c","a.purchase_type","=","c.standard_code")
-        ->leftjoin("m_standard_code as d","a.order_type","=","c.standard_code")
+        ->leftjoin("m_standard_code as d","a.order_type","=","d.standard_code")
         ->where('a.ref_date','>=',$date1)
-        ->where('a.ref_date','>=',$date2);
+        ->where('a.ref_date','<=',$date2);
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {
@@ -349,9 +349,10 @@ class PurchaseOrderController extends Controller
         ->leftjoin("m_warehouse as b","a.location_id","=","b.sysid")
         ->leftjoin("m_standard_code as c","a.purchase_type","=","c.standard_code")
         ->leftjoin("m_standard_code as d","a.order_type","=","c.standard_code")
+        ->where('a.expired_date','<=',Date('Y-m-d'))
         ->where('a.is_posted','1')
         ->where('a.is_void','0')
-        ->where('a.expired_date','<=',Date('Y-m-d'));
+        ->where('order_state','<>','CLOSED');
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {

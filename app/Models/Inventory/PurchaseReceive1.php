@@ -22,7 +22,8 @@ class PurchaseReceive1 extends Model
         'discount2'=>'float',
         'tax'=>'float',
         'total'=>'float',
-        'is_tax'=>'string'
+        'is_tax'=>'string',
+        'is_process'=>'string'
     ];
 
     public static function GenerateNumber($ref_date){
