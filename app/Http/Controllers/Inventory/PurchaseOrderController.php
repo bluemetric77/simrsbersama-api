@@ -161,6 +161,7 @@ class PurchaseOrderController extends Controller
                 PurchaseOrder2::where('sysid',$order->sysid)->delete();
             }
             $order->ref_date=$header['ref_date'];
+            $order->ref_time=Date('H:i:s');
             $order->ref_number=isset($header['ref_number']) ? $header['ref_number'] :'';
             $order->doc_purchase_request=isset($header['doc_purchase_request']) ? $header['doc_purchase_request'] :'';
             $order->ref_document=$header['ref_document'];
