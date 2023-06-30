@@ -20,19 +20,19 @@ class PurchaseOrderController extends Controller
     public function index(Request $request)
     {
         $filter = $request->filter;
-        $limit = isset($request->limit) ? $request->limit : 100;
+        $limit = isset($request->limit) ? $request->limit : 50;
         $sorting = ($request->descending == "true") ? "desc":"asc";
         $sortBy = $request->sortBy;
         $date1 = isset($request->date1) ? $request->date1 :'1899-01-01';
         $date2 = isset($request->date2) ? $request->date2 :'1899-01-01';
         $data=PurchaseOrder1::from('t_purchase_order1 as a')
         ->selectRaw("a.uuid_rec,a.sysid,a.doc_number,a.ref_date,a.ref_number,a.partner_name,a.total,a.expired_date,b.location_name,
-        c.descriptions as purchase_type,d.descriptions as order_type,a.state")
+        c.descriptions as purchase_type,d.descriptions as order_type,a.state,order_state,is_void,is_posted")
         ->leftjoin("m_warehouse as b","a.location_id","=","b.sysid")
         ->leftjoin("m_standard_code as c","a.purchase_type","=","c.standard_code")
-        ->leftjoin("m_standard_code as d","a.order_type","=","c.standard_code")
+        ->leftjoin("m_standard_code as d","a.order_type","=","d.standard_code")
         ->where('a.ref_date','>=',$date1)
-        ->where('a.ref_date','>=',$date2);
+        ->where('a.ref_date','<=',$date2);
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
             $data = $data->where(function ($q) use ($filter) {
@@ -44,6 +44,37 @@ class PurchaseOrderController extends Controller
         }
         $data = $data->orderBy($sortBy, $sorting)->paginate($limit);
         return response()->success('Success', $data);
+    }
+
+    public function destroy(Request $request) {
+        $data= $request->json()->all();
+        $header=$data['header'];
+        $order=PurchaseOrder1::where('uuid_rec',isset($header['uuid_rec']) ? $header['uuid_rec'] :'')->first();
+        if ($order) {
+            if ($order->is_posted=='1') {
+                return response()->error('',501,'Dokumen pemesanan sudah disetujui');            
+            } else if ($order->is_void=='1') {
+                return response()->error('',501,'Dokumen pemesanan sudah dibatalkan');            
+            } else if($order->order_state<>'OPEN') {
+                return response()->error('Gagal',501,'Data tidak bisa diupdate, PO sudah ada penerimaan');
+            }
+        } else {
+            return response()->error('',501,'Dokumen pemesanan tidak ditemukan');
+        }
+
+        DB::beginTransaction();
+        try{
+            $sysid=$order->sysid;
+            $order->void_date=Date('Y-m-d H:i:s');
+            $order->void_by=PagesHelp::Users($request)->sysid;
+            $order->is_void='1';
+            $order->save();
+            DB::commit();
+            return response()->success('Success','Persetujuan pemesanan barang Berhasil');
+		} catch (Exception $e) {
+            DB::rollback();
+            return response()->error('',501,$e);
+        }       
     }
 
     public function store(Request $request) {
@@ -110,7 +141,6 @@ class PurchaseOrderController extends Controller
 
         DB::beginTransaction();
         try{
-            $sysid=$header['sysid'];
             $sysid_request=$header['purchase_request_id'];
             $partner=Supplier::select('supplier_name')->where('sysid',$header['partner_id'])->first();    
             $order=PurchaseOrder1::where('uuid_rec',isset($header['uuid_rec']) ? $header['uuid_rec'] :'')->first();
@@ -120,14 +150,18 @@ class PurchaseOrderController extends Controller
                 $order->doc_number=PurchaseOrder1::GenerateNumber($header['ref_date']);
                 $order->create_by=PagesHelp::Users($request)->sysid;
             } else {
-                if (($order->is_posted=='1') || ($order->is_cancel=='1')) {
+                if (($order->is_posted=='1') || ($order->is_void=='1')) {
                     DB::rollback();
                     return response()->error('Gagal',501,'Data tidak bisa diupdate, PO sudah diposting/dibatalkan');
+                } else if($order->order_state<>'OPEN') {
+                    DB::rollback();
+                    return response()->error('Gagal',501,'Data tidak bisa diupdate, PO sudah ada penerimaan');
                 }
                 $order->update_by=PagesHelp::Users($request)->sysid;
                 PurchaseOrder2::where('sysid',$order->sysid)->delete();
             }
             $order->ref_date=$header['ref_date'];
+            $order->ref_time=Date('H:i:s');
             $order->ref_number=isset($header['ref_number']) ? $header['ref_number'] :'';
             $order->doc_purchase_request=isset($header['doc_purchase_request']) ? $header['doc_purchase_request'] :'';
             $order->ref_document=$header['ref_document'];
@@ -143,6 +177,7 @@ class PurchaseOrderController extends Controller
             $order->discount1=$header['discount1'];
             $order->discount2=$header['discount2'];
             $order->tax=$header['tax'];
+            $order->order_state='OPEN';
             $order->downpayment=isset($header['downpayment']) ? $header['downpayment'] :0;
             $order->delivery_fee=isset($header['delivery_fee']) ? $header['delivery_fee'] :0;
             $order->total=$header['total'];
@@ -166,6 +201,7 @@ class PurchaseOrderController extends Controller
                 $line->mou_inventory=$rec['mou_inventory'];
                 $line->price=$rec['price'];
                 $line->qty_draft=$rec['qty_draft'];
+                $line->qty_order=$rec['qty_order'];
                 $line->prc_discount1=$rec['prc_discount1'];
                 $line->discount1=$rec['discount1'];
                 $line->prc_discount2=$rec['prc_discount2'];
@@ -183,7 +219,108 @@ class PurchaseOrderController extends Controller
             DB::update("UPDATE t_purchase_order2 a INNER JOIN m_items b ON a.item_code=b.item_code
                 SET a.item_id=b.sysid WHERE a.sysid=?",[$sysid]);
             DB::commit();
-            return response()->success('Success','Simpan data Berhasil');
+            return response()->success('Success','Simpan pemesanan barang berhasil');
+		} catch (Exception $e) {
+            DB::rollback();
+            return response()->error('',501,$e);
+        }
+    }
+
+   public function posting(Request $request) {
+        $data= $request->json()->all();
+        $header=$data['header'];
+        $detail=$data['detail'];
+        $header['amount']=0;
+        $header['discount1']=0;
+        $header['discount2']=0;
+        $header['tax']=0;
+        $header['total']=0;
+        foreach($detail as $line) {
+            $header['amount']=$header['amount'] + ($line['qty_order'] * $line['price']);
+            $header['discount1']=$header['discount1'] + $line['discount1'];
+            $header['discount2']=$header['discount2'] + $line['discount2'];
+            $header['tax']=$header['tax'] + $line['tax'];
+            $header['total']=$header['total'] + $line['total'];
+        }
+        $order=PurchaseOrder1::where('uuid_rec',isset($header['uuid_rec']) ? $header['uuid_rec'] :'')->first();
+        if ($order) {
+            if ($order->is_posted=='1') {
+                return response()->error('',501,'Dokumen pemesanan sudah disetujui');            
+            } else if ($order->is_void=='1') {
+                return response()->error('',501,'Dokumen pemesanan sudah dibatalkan');            
+            } else if($order->order_state<>'OPEN') {
+                return response()->error('Gagal',501,'Data tidak bisa diupdate, PO sudah ada penerimaan');
+            }
+        } else {
+            return response()->error('',501,'Dokumen pemesanan tidak ditemukan');
+        }
+
+        DB::beginTransaction();
+        try{
+            $sysid=$order->sysid;
+            $order->posted_date=Date('Y-m-d H:i:s');
+            $order->posted_by=PagesHelp::Users($request)->sysid;
+            $order->is_posted='1';
+            $order->amount=$header['amount'];
+            $order->discount1=$header['discount1'];
+            $order->discount2=$header['discount2'];
+            $order->tax=$header['tax'];
+            $order->state='Posted';
+            $order->save();
+            $sysid=$order->sysid;
+            foreach($detail as $rec) {
+                $line= PurchaseOrder2::where('sysid',$sysid)
+                ->where('line_no',$rec['line_no'])
+                ->first();
+                if ($line){
+                    $line->price=$rec['price'];
+                    $line->qty_order=$rec['qty_order'];
+                    $line->prc_discount1=$rec['prc_discount1'];
+                    $line->discount1=$rec['discount1'];
+                    $line->prc_discount2=$rec['prc_discount2'];
+                    $line->discount2=$rec['discount2'];
+                    $line->prc_tax=$rec['prc_tax'];
+                    $line->tax=$rec['tax'];
+                    $line->total=$rec['total'];
+                    $line->save();
+                }
+            }
+            DB::commit();
+            return response()->success('Success','Persetujuan pemesanan barang Berhasil');
+		} catch (Exception $e) {
+            DB::rollback();
+            return response()->error('',501,$e);
+        }
+    }
+ 
+
+   public function unposting(Request $request) {
+        $data= $request->json()->all();
+        $header=$data['header'];
+
+        $order=PurchaseOrder1::where('uuid_rec',isset($header['uuid_rec']) ? $header['uuid_rec'] :'')->first();
+        if ($order) {
+            if ($order->is_posted=='0') {
+                return response()->error('',501,'Dokumen pemesanan sudah disetujui');            
+            } else if ($order->is_void=='1') {
+                return response()->error('',501,'Dokumen pemesanan sudah dibatalkan');            
+            } else if($order->order_state<>'OPEN') {
+                return response()->error('Gagal',501,'Data tidak bisa diupdate, PO sudah ada penerimaan');
+            }
+        } else {
+            return response()->error('',501,'Dokumen pemesanan tidak ditemukan');
+        }
+
+        DB::beginTransaction();
+        try{
+            $sysid=$order->sysid;
+            $order->posted_date=Date('Y-m-d H:i:s');
+            $order->posted_by=PagesHelp::Users($request)->sysid;
+            $order->is_posted='0';
+            $order->state='Draft';
+            $order->save();
+            DB::commit();
+            return response()->success('Success','Persetujuan pemesanan barang Berhasil');
 		} catch (Exception $e) {
             DB::rollback();
             return response()->error('',501,$e);
@@ -199,4 +336,47 @@ class PurchaseOrderController extends Controller
         }
         return response()->success('Success', $data);
     }
+
+    public function open(Request $request)
+    {
+        $filter = $request->filter;
+        $limit = isset($request->limit) ? $request->limit : 100;
+        $sorting = ($request->descending == "true") ? "desc":"asc";
+        $sortBy = $request->sortBy;
+        $data=PurchaseOrder1::from('t_purchase_order1 as a')
+        ->selectRaw("a.uuid_rec,a.sysid,a.doc_number,a.ref_date,a.ref_number,a.partner_id,a.partner_name,a.total,a.expired_date,a.location_id,b.location_name,
+        c.descriptions as purchase_type,d.descriptions as order_type,a.state,order_state,is_void,is_posted,posted_date,
+        a.term_id,a.item_group")
+        ->leftjoin("m_warehouse as b","a.location_id","=","b.sysid")
+        ->leftjoin("m_standard_code as c","a.purchase_type","=","c.standard_code")
+        ->leftjoin("m_standard_code as d","a.order_type","=","c.standard_code")
+        ->where('a.expired_date','<=',Date('Y-m-d'))
+        ->where('a.is_posted','1')
+        ->where('a.is_void','0')
+        ->where('order_state','<>','CLOSED');
+        if (!($filter == '')) {
+            $filter = '%' . trim($filter) . '%';
+            $data = $data->where(function ($q) use ($filter) {
+                $q->where('a.doc_number', 'like', $filter);
+                $q->orwhere('a.ref_number', 'like', $filter);
+                $q->orwhere('a.partner_name', 'like', $filter);
+                $q->orwhere('b.location_name', 'like', $filter);
+            });
+        }
+        $data = $data->orderBy($sortBy, $sorting)->paginate($limit);
+        return response()->success('Success', $data);
+    }
+
+    public function detail(Request $request)
+    {
+        $uuidrec=isset($request->uuid_rec) ? $request->uuid_rec :'-';    
+        $data=PurchaseOrder1::from('t_purchase_order1 as a')
+        ->selectRaw("b.sysid,b.line_no,b.item_id,b.item_code,b.item_name,b.mou_purchase,b.conversion,b.mou_inventory,
+        b.qty_order,b.qty_received,b.price,b.prc_discount1,b.prc_discount2,b.prc_tax")
+        ->join('t_purchase_order2 as b','a.sysid','=','b.sysid')
+        ->where('a.uuid_rec',$uuidrec)->get();
+        return response()->success('Success', $data);
+    }
+
+
 }
