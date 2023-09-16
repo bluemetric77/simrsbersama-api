@@ -52,9 +52,9 @@ class PurchaseOrderController extends Controller
         $order=PurchaseOrder1::where('uuid_rec',isset($header['uuid_rec']) ? $header['uuid_rec'] :'')->first();
         if ($order) {
             if ($order->is_posted=='1') {
-                return response()->error('',501,'Dokumen pemesanan sudah disetujui');            
+                return response()->error('',501,'Dokumen pemesanan sudah disetujui');
             } else if ($order->is_void=='1') {
-                return response()->error('',501,'Dokumen pemesanan sudah dibatalkan');            
+                return response()->error('',501,'Dokumen pemesanan sudah dibatalkan');
             } else if($order->order_state<>'OPEN') {
                 return response()->error('Gagal',501,'Data tidak bisa diupdate, PO sudah ada penerimaan');
             }
@@ -70,11 +70,11 @@ class PurchaseOrderController extends Controller
             $order->is_void='1';
             $order->save();
             DB::commit();
-            return response()->success('Success','Persetujuan pemesanan barang Berhasil');
+            return response()->success('Success','Pembatalan pemesanan barang Berhasil');
 		} catch (Exception $e) {
             DB::rollback();
             return response()->error('',501,$e);
-        }       
+        }
     }
 
     public function store(Request $request) {
@@ -82,8 +82,8 @@ class PurchaseOrderController extends Controller
         $header=$data['header'];
         $detail=$data['detail'];
         $validator=Validator::make($header,[
-            'ref_date'=>'bail|required',
-            'expired_date'=>'bail|required',
+            'ref_date'=>'bail|required|date',
+            'expired_date'=>'bail|required|date',
             'delivery_date'=>'bail|required',
             'location_id'=>'bail|required|exists:m_warehouse,sysid',
             'partner_id'=>'bail|required|exists:m_supplier,sysid'
@@ -142,11 +142,11 @@ class PurchaseOrderController extends Controller
         DB::beginTransaction();
         try{
             $sysid_request=$header['purchase_request_id'];
-            $partner=Supplier::select('supplier_name')->where('sysid',$header['partner_id'])->first();    
+            $partner=Supplier::select('supplier_name')->where('sysid',$header['partner_id'])->first();
             $order=PurchaseOrder1::where('uuid_rec',isset($header['uuid_rec']) ? $header['uuid_rec'] :'')->first();
             if (!($order)) {
                 $order=new PurchaseOrder1();
-                $order->uuid_rec=Str::uuid(); 
+                $order->uuid_rec=Str::uuid();
                 $order->doc_number=PurchaseOrder1::GenerateNumber($header['ref_date']);
                 $order->create_by=PagesHelp::Users($request)->sysid;
             } else {
@@ -161,7 +161,7 @@ class PurchaseOrderController extends Controller
                 PurchaseOrder2::where('sysid',$order->sysid)->delete();
             }
             $order->ref_date=$header['ref_date'];
-            $order->ref_time=Date('H:i:s');
+            $order->ref_time=$header['ref_time'];
             $order->ref_number=isset($header['ref_number']) ? $header['ref_number'] :'';
             $order->doc_purchase_request=isset($header['doc_purchase_request']) ? $header['doc_purchase_request'] :'';
             $order->ref_document=$header['ref_document'];
@@ -213,7 +213,7 @@ class PurchaseOrderController extends Controller
                 $line->request_line=isset($rec['request_line']) ? $rec['request_line'] :-1;
                 $line->request_qty=isset($rec['request_qty']) ?  $rec['request_qty']:0;
                 $line->line_type=isset($rec['line_type']) ? $rec['line_type'] :'Follow';
-                $line->source_line=isset($rec['source_line']) ? $rec['source_line'] :'FreeLine';                
+                $line->source_line=isset($rec['source_line']) ? $rec['source_line'] :'FreeLine';
                 $line->save();
             }
             DB::update("UPDATE t_purchase_order2 a INNER JOIN m_items b ON a.item_code=b.item_code
@@ -245,9 +245,9 @@ class PurchaseOrderController extends Controller
         $order=PurchaseOrder1::where('uuid_rec',isset($header['uuid_rec']) ? $header['uuid_rec'] :'')->first();
         if ($order) {
             if ($order->is_posted=='1') {
-                return response()->error('',501,'Dokumen pemesanan sudah disetujui');            
+                return response()->error('',501,'Dokumen pemesanan sudah disetujui');
             } else if ($order->is_void=='1') {
-                return response()->error('',501,'Dokumen pemesanan sudah dibatalkan');            
+                return response()->error('',501,'Dokumen pemesanan sudah dibatalkan');
             } else if($order->order_state<>'OPEN') {
                 return response()->error('Gagal',501,'Data tidak bisa diupdate, PO sudah ada penerimaan');
             }
@@ -292,7 +292,7 @@ class PurchaseOrderController extends Controller
             return response()->error('',501,$e);
         }
     }
- 
+
 
    public function unposting(Request $request) {
         $data= $request->json()->all();
@@ -301,9 +301,9 @@ class PurchaseOrderController extends Controller
         $order=PurchaseOrder1::where('uuid_rec',isset($header['uuid_rec']) ? $header['uuid_rec'] :'')->first();
         if ($order) {
             if ($order->is_posted=='0') {
-                return response()->error('',501,'Dokumen pemesanan sudah disetujui');            
+                return response()->error('',501,'Dokumen pemesanan sudah disetujui');
             } else if ($order->is_void=='1') {
-                return response()->error('',501,'Dokumen pemesanan sudah dibatalkan');            
+                return response()->error('',501,'Dokumen pemesanan sudah dibatalkan');
             } else if($order->order_state<>'OPEN') {
                 return response()->error('Gagal',501,'Data tidak bisa diupdate, PO sudah ada penerimaan');
             }
@@ -329,7 +329,7 @@ class PurchaseOrderController extends Controller
 
     public function get(Request $request)
     {
-        $uuidrec=isset($request->uuidrec) ? $request->uuidrec :'-';    
+        $uuidrec=isset($request->uuidrec) ? $request->uuidrec :'-';
         $data['header']=PurchaseOrder1::where('uuid_rec',$uuidrec)->first();
         if ($data['header']) {
             $data['detail']=PurchaseOrder2::where('sysid',$data['header']->sysid)->get();
@@ -369,7 +369,7 @@ class PurchaseOrderController extends Controller
 
     public function detail(Request $request)
     {
-        $uuidrec=isset($request->uuid_rec) ? $request->uuid_rec :'-';    
+        $uuidrec=isset($request->uuid_rec) ? $request->uuid_rec :'-';
         $data=PurchaseOrder1::from('t_purchase_order1 as a')
         ->selectRaw("b.sysid,b.line_no,b.item_id,b.item_code,b.item_name,b.mou_purchase,b.conversion,b.mou_inventory,
         b.qty_order,b.qty_received,b.price,b.prc_discount1,b.prc_discount2,b.prc_tax")

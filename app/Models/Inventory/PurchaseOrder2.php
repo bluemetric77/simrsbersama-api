@@ -30,6 +30,7 @@ class PurchaseOrder2 extends Model
         'qty_received'=>'float',
         'request_qty'=>'float',
         'request_line'=>'int',
-        'request_id'=>'int'
-    ];    
+        'request_id'=>'int',
+        'conversion'=>'float'
+    ];
 }

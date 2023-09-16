@@ -117,20 +117,35 @@ Route::group(['prefix' => 'inventory','middleware'=>'appauth'], function () {
         Route::controller(\Inventory\PurchaseOrderController::class)->group(function () {
             Route::get('order', 'index');
             Route::post('order', 'store');
-            Route::get('order/get', 'get');        
-            Route::delete('order', 'destroy');  
-            Route::post('order/posting', 'posting');  
-            Route::post('order/unposting', 'unposting');  
+            Route::get('order/get', 'get');
+            Route::delete('order', 'destroy');
+            Route::post('order/posting', 'posting');
+            Route::post('order/unposting', 'unposting');
             Route::get('order/open', 'open');
             Route::get('order/detail', 'detail');
         });
         Route::controller(\Inventory\PurchaseReceiveController::class)->group(function () {
             Route::get('receive', 'index');
             Route::post('receive', 'store');
-            Route::get('receive/get', 'get');        
-            Route::delete('receive', 'destroy');  
+            Route::get('receive/get', 'get');
+            Route::delete('receive', 'destroy');
             Route::get('receive/open', 'open');
             Route::get('receive/detail', 'detail');
+            Route::post('receive/credit', 'store_credit');
+            Route::delete('receive/credit', 'destroy_credit');
+        });
+    });
+
+    Route::group(['prefix' => 'item'], function () {
+        Route::controller(\Inventory\ItemRequestController::class)->group(function () {
+            Route::get('request', 'index');
+            Route::post('request', 'store');
+            Route::get('request/get', 'get');
+            Route::delete('request', 'destroy');
+            Route::post('request/posting', 'posting');
+            Route::post('request/unposting', 'unposting');
+            Route::get('request/open', 'open');
+            Route::get('request/detail', 'detail');
         });
     });
 });
@@ -365,5 +380,5 @@ Route::group(['prefix' => 'finance', 'as' => 'finance','middleware'=>'appauth'],
     Route::get('/ujo', 'Finance\UJOController@show');
     Route::post('/cash_bank/transaction-out', 'Finance\CashBankController@post_cashbankout');
     Route::post('/cash_bank/transaction-in', 'Finance\CashBankController@post_cashbankin');
-    
+
 });

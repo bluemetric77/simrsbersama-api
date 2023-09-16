@@ -23,12 +23,24 @@ class PurchaseReceive1 extends Model
         'tax'=>'float',
         'total'=>'float',
         'is_tax'=>'string',
-        'is_process'=>'string'
+        'is_process'=>'string',
+        'is_void'=>'string',
+        'conversion'=>'float',
+        'qty_order'=>'float',
+        'price'=>'float',
+        'prc_discount1'=>'float',
+        'prc_discount2'=>'float',
+        'prc_tax'=>'float',
+        'qty_received'=>'float'
     ];
 
     public static function GenerateNumber($ref_date){
         $PREFIX = 'PRI';
         return PagesHelp::GetDocseries($PREFIX,$ref_date);
-    }    
+    }
+    public static function GenerateNumberCN($ref_date){
+        $PREFIX = 'PRT';
+        return PagesHelp::GetDocseries($PREFIX,$ref_date);
+    }
 
 }

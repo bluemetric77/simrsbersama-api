@@ -17,7 +17,7 @@ class PurchaseReceive2 extends Model
     protected $guarded =[];
     protected $casts = [
         'conversion'=>'float',
-        'qty_draft'=>'float',
+        'qty_receive'=>'float',
         'qty_order'=>'float',
         'price'=>'float',
         'prc_discount1'=>'float',
@@ -30,6 +30,10 @@ class PurchaseReceive2 extends Model
         'qty_received'=>'float',
         'request_qty'=>'float',
         'request_line'=>'int',
-        'request_id'=>'int'
-    ];    
+        'request_id'=>'int',
+        'conversion'=>'float',
+        'qty_return'=>'float',
+        'qty_update'=>'float',
+        'cost_update'=>'float'
+    ];
 }
