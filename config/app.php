@@ -237,6 +237,7 @@ return [
         'Accounting' => App\Helpers\Accounting::class,
         'AutoJurnal' => App\Helpers\AutoJurnal::class,
         'HelpersInventory' => App\Helpers\HelpersInventory::class,
+        'DataLog' => App\Helpers\HelpersDataLog::class,
     ],
 
 ];

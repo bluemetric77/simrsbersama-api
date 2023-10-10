@@ -143,9 +143,18 @@ Route::group(['prefix' => 'inventory','middleware'=>'appauth'], function () {
             Route::get('request/get', 'get');
             Route::delete('request', 'destroy');
             Route::post('request/posting', 'posting');
-            Route::post('request/unposting', 'unposting');
+            Route::post('request/reopen', 'unposting');
             Route::get('request/open', 'open');
             Route::get('request/detail', 'detail');
+        });
+
+        Route::controller(\Inventory\ItemDistributionController::class)->group(function () {
+            Route::get('distribution', 'index');
+            Route::post('distribution', 'store');
+            Route::get('distribution/get', 'get');
+            Route::delete('distribution', 'destroy');
+            Route::get('distribution/open', 'open');
+            Route::get('distribution/detail', 'detail');
         });
     });
 });

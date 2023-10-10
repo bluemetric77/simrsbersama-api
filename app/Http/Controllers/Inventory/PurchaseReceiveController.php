@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use PagesHelp;
 use HelpersInventory;
-
+use Datalog;
 
 class PurchaseReceiveController extends Controller
 {

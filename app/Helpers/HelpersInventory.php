@@ -160,18 +160,26 @@ class HelpersInventory {
             }  else if ($source=='PURCHASE'){
                 DB::insert("INSERT INTO t_item_mutations(doc_sysid,doc_type,doc_number,ref_number,location_id,item_sysid,line_state,item_code,item_name,ref_date,ref_time,
                     mou_inventory,qty_in,notes,price,purchase_price,total,entry_date,entry_by)
-                    SELECT a.sysid,?,a.doc_number,a.invoice_number,a.location_id,b.item_id,'N',b.item_code,b.item_name,a.ref_date,a.ref_time,
+                    SELECT a.sysid,?,a.doc_number,a.invoice_number,a.location_id,b.item_sysid,'N',b.item_code,b.item_name,a.ref_date,a.ref_time,
                     b.mou_inventory,b.qty_update,CONCAT('Penerimaan Barang [',a.doc_number,'] ',a.partner_name,'/',a.invoice_number),b.cost_update,b.cost_update,b.total,NOW(),a.create_by
                     FROM t_purchase_receive1 a INNER JOIN t_purchase_receive2 b ON a.sysid=b.sysid
                     WHERE a.sysid=?",[$source,$sysid]);
             }  else if ($source=='PURCHASE-RETURN'){
                 DB::insert("INSERT INTO t_item_mutations(doc_sysid,doc_type,doc_number,ref_number,location_id,item_sysid,line_state,item_code,item_name,ref_date,ref_time,
                     mou_inventory,qty_out,notes,price,purchase_price,total,entry_date,entry_by)
-                    SELECT a.sysid,?,a.doc_number,a.invoice_number,a.location_id,b.item_id,'N',b.item_code,b.item_name,a.ref_date,a.ref_time,
+                    SELECT a.sysid,?,a.doc_number,a.invoice_number,a.location_id,b.item_sysid,'N',b.item_code,b.item_name,a.ref_date,a.ref_time,
                     b.mou_inventory,ABS(b.qty_update),CONCAT('Retur Penerimaan Barang [',a.doc_number,'] ',a.partner_name,'/',a.invoice_number),b.cost_update,b.cost_update,b.total,NOW(),a.create_by
                     FROM t_purchase_receive1 a INNER JOIN t_purchase_receive2 b ON a.sysid=b.sysid
                     WHERE a.sysid=?",[$source,$sysid]);
-            }        }
+            }  else if ($source=='DISTRIBUTION-OUT'){
+                DB::insert("INSERT INTO t_item_mutations(doc_sysid,doc_type,doc_number,ref_number,location_id,item_sysid,line_state,item_code,item_name,ref_date,ref_time,
+                    mou_inventory,qty_out,notes,price,total,entry_date,entry_by)
+                    SELECT a.sysid,?,a.doc_number,a.ref_number,a.location_id_from,b.item_sysid,'N',b.item_code,b.item_name,a.ref_date,a.ref_time,
+                    b.mou_inventory,ABS(b.quantity_update),CONCAT('Distribusi barang [',a.doc_number,'] ',a.location_name_from,' ke ',a.location_name_to),b.item_cost,b.line_cost,NOW(),a.create_by
+                    FROM t_items_distribution1 a INNER JOIN t_items_distribution2 b ON a.sysid=b.sysid
+                    WHERE a.sysid=?",[$source,$sysid]);
+            }
+        }
 
         $data=ItemMutations::selectRaw('sysid,location_id,item_sysid,item_code,(qty_in-qty_out)+qty_adjustment as mutation,mou_inventory,price,total')
         ->where('doc_sysid',$sysid)
