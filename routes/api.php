@@ -151,10 +151,17 @@ Route::group(['prefix' => 'inventory','middleware'=>'appauth'], function () {
         Route::controller(\Inventory\ItemDistributionController::class)->group(function () {
             Route::get('distribution', 'index');
             Route::post('distribution', 'store');
+            Route::post('distribution/posting', 'posting');
             Route::get('distribution/get', 'get');
             Route::delete('distribution', 'destroy');
+            Route::get('distribution/confirm', 'confirm');
+            Route::post('distribution/accepted', 'accepted');
+            Route::delete('distribution/rejected', 'rejected');
             Route::get('distribution/open', 'open');
             Route::get('distribution/detail', 'detail');
+        });
+        Route::controller(\Master\Inventory\InventoryController::class)->group(function () {
+            Route::get('stock', 'stock');
         });
     });
 });

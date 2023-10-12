@@ -48,18 +48,7 @@ class HelpersInventory {
                 ->where('a.line_state',$line_state)
                 ->where('a.is_deleted','0')
                 ->get();
-
-                /*foreach($buffer as $line) {
-                    if ($line->last_out > $line->last_in){
-                        $item_code=$line->item_code;
-                        $item_name=$line->item_name;
-                        $respon['success']=false;
-                        $respon['message']="Data tidak bisa ubah, sudah ada transaksi pengeluaran [$item_code - $item_name]";
-                        return $respon;
-                        exit(0);
-                    }
-                }*/
-
+                
                 #Recalculation before
                 $data=ItemMutations::selectRaw('location_id,item_sysid,item_code,-((qty_in-qty_out)+qty_adjustment) as mutation,mou_inventory,price,-total as total')
                 ->where('doc_sysid',$sysid)
@@ -176,6 +165,13 @@ class HelpersInventory {
                     mou_inventory,qty_out,notes,price,total,entry_date,entry_by)
                     SELECT a.sysid,?,a.doc_number,a.ref_number,a.location_id_from,b.item_sysid,'N',b.item_code,b.item_name,a.ref_date,a.ref_time,
                     b.mou_inventory,ABS(b.quantity_update),CONCAT('Distribusi barang [',a.doc_number,'] ',a.location_name_from,' ke ',a.location_name_to),b.item_cost,b.line_cost,NOW(),a.create_by
+                    FROM t_items_distribution1 a INNER JOIN t_items_distribution2 b ON a.sysid=b.sysid
+                    WHERE a.sysid=?",[$source,$sysid]);
+            }  else if ($source=='DISTRIBUTION-IN'){
+                DB::insert("INSERT INTO t_item_mutations(doc_sysid,doc_type,doc_number,ref_number,location_id,item_sysid,line_state,item_code,item_name,ref_date,ref_time,
+                    mou_inventory,qty_in,notes,price,total,entry_date,entry_by)
+                    SELECT a.sysid,?,a.doc_number,a.ref_number,a.location_id_to,b.item_sysid,'N',b.item_code,b.item_name,DATE(a.received_date),TIME(a.received_date),
+                    b.mou_inventory,ABS(b.quantity_update),CONCAT('Penerimaan distribusi barang [',a.doc_number,'] ',a.location_name_from,' ke ',a.location_name_to),b.item_cost,b.line_cost,NOW(),a.received_by
                     FROM t_items_distribution1 a INNER JOIN t_items_distribution2 b ON a.sysid=b.sysid
                     WHERE a.sysid=?",[$source,$sysid]);
             }

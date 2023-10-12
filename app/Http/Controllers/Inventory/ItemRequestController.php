@@ -29,7 +29,9 @@ class ItemRequestController extends Controller
         $date2 = isset($request->date2) ? $request->date2 :'1899-01-01';
         $data=ItemRequest1::from('t_items_request1 as a')
         ->selectRaw("a.uuid_rec,a.sysid,a.doc_number,a.ref_date,a.ref_number,a.location_name_to,a.location_name_from,
-        a.is_approved,a.is_void,a.is_process,a.request_state,a.remarks,a.line_state,a.process_date,a.process_number")
+        a.is_approved,a.is_void,a.is_process,c.descriptions as request_state,a.remarks,b.descriptions as line_state,a.process_date,a.process_number")
+        ->join("m_standard_code as b","a.line_state","=","b.standard_code")
+        ->join("m_standard_code as c","a.request_state","=","c.standard_code")
         ->where('a.ref_date','>=',$date1)
         ->where('a.ref_date','<=',$date2);
         if (!($filter == '')) {
@@ -67,8 +69,11 @@ class ItemRequestController extends Controller
             $order->void_date=Date('Y-m-d H:i:s');
             $order->void_by=PagesHelp::Users($request)->sysid;
             $order->is_void='1';
-            $order->request_state='VOID';
+            $order->request_state='C005@V';
             $order->save();
+            $old['header']=ItemRequest1::where('sysid',$sysid)->first();
+            $old['detail']=ItemRequest2::where('sysid',$sysid)->get();
+            DataLog::create($sysid,$order->documentid,$order->sysid,$order->doc_number,'INV-REQUEST','DELETED',$old,"-");
             DB::commit();
             return response()->success('Success','Pembatalan permintaan barang Berhasil');
 		} catch (Exception $e) {
@@ -155,7 +160,8 @@ class ItemRequestController extends Controller
 
             $order->remarks       = isset($header['remarks']) ? $header['remarks'] :'';
             $order->item_group    = isset($header['item_group']) ? $header['item_group'] :'';
-            $order->request_state = 'OPEN';
+            $order->request_state = 'C005@O';
+            $order->line_state    = 'C005@O';
             $order->save();
 
             #Save detail item request
@@ -258,7 +264,7 @@ class ItemRequestController extends Controller
             $order->is_approved = 1;
             $order->approved_by = PagesHelp::Users($request)->sysid;
             $order->approved_date = Date('Y-m-d H:i:s');
-            $order->request_state = 'APPROVED';
+            $order->request_state = 'C005@1';
             $order->save();
 
             $sysid=$order->sysid;
@@ -312,7 +318,7 @@ class ItemRequestController extends Controller
             $order->approved_date = null;
             $order->approved_by   = -1;
             $order->is_approved   = '0';
-            $order->request_state = 'OPEN';
+            $order->request_state = 'C005@O';
             $order->save();
             DB::commit();
             return response()->success('Success','Persetujuan pemesanan barang Berhasil');
@@ -360,8 +366,10 @@ class ItemRequestController extends Controller
         $date2 = isset($request->date2) ? $request->date2 :'1899-01-01';
         $data=ItemRequest1::from('t_items_request1 as a')
         ->selectRaw("a.uuid_rec,a.sysid,a.doc_number,a.ref_date,a.ref_number,a.location_name_to,a.location_name_from,
-        a.is_approved,a.is_void,a.is_process,a.request_state,a.remarks,a.line_state")
-        ->whereIn('a.line_state',['OPEN','PARTIAL'])
+        a.is_approved,a.is_void,a.is_process,c.descriptions as request_state,a.remarks,b.descriptions as line_state")
+        ->join("m_standard_code as b","a.line_state","=","b.standard_code")
+        ->join("m_standard_code as c","a.request_state","=","c.standard_code")
+        ->whereIn('a.line_state',['C005@O','C005@P'])
         ->where('a.is_void','0');
 
         if (!($filter == '')) {

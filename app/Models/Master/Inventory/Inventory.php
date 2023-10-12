@@ -32,6 +32,12 @@ class Inventory extends Model
         'on_hand'=>'float',
         'on_hand_unit'=>'float',
         'is_active'=>'string',
-        'conversion'=>'float'
+        'conversion'=>'float',
+        'on_order'=>'float',
+        'on_demand'=>'float',
+        'minimum_stock'=>'float',
+        'maximum_stock'=>'float',
+        'on_request'=>'float',
+        'on_delivery'=>'float',
     ];
 }

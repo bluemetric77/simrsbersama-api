@@ -7,7 +7,10 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use PagesHelp;
+use DataLog;
+
 
 class WarehouseController extends Controller
 {
@@ -19,13 +22,16 @@ class WarehouseController extends Controller
         $sortBy = $request->sortBy;
         $group_name=isset($request->group_name) ? $request->group_name : 'MEDICAL';
         $is_active=isset($request->is_active) ? $request->is_active : false;
+        $is_all=isset($request->all) ? $request->all : '0';
         if ($is_active==true) {
-            $data=Warehouse::selectRaw("sysid,location_code,location_name,is_received,is_sales,is_distribution")
-            ->where('warehouse_group',$group_name)
-            ->where('is_active',true);
+            $data=Warehouse::selectRaw("sysid,location_code,location_name,warehouse_group,is_received,is_sales,is_distribution,uuid_rec");
+            if ($is_all=='0') {
+                $data=$data->where('warehouse_group',$group_name);
+            }
+            $data=$data->where('is_active',true);
         } else {
-            $data=Warehouse::selectRaw("sysid,location_code,location_name,inventory_account,cogs_account,expense_account,variant_account,
-            warehouse_type,is_received,is_sales,is_distribution,is_active,update_userid,create_date,update_date")
+            $data=Warehouse::selectRaw("sysid,location_code,location_name,warehouse_group,inventory_account,cogs_account,expense_account,variant_account,
+            warehouse_type,is_received,is_sales,is_distribution,is_active,update_userid,create_date,update_date,uuid_rec")
             ->where('warehouse_group',$group_name);
         }
         if (!($filter == '')) {
@@ -40,16 +46,17 @@ class WarehouseController extends Controller
     }
 
     public function destroy(Request $request){
-        $sysid=isset($request->sysid) ? $request->sysid :'-1';
-        $data=Warehouse::find($sysid);
+        $uuid_rec=isset($request->uuid_rec) ? $request->uuid_rec :'';
+        $data=Warehouse::where('uuid_rec',$uuid_rec)->first();
         if ($data) {
             DB::beginTransaction();
             try{
-                PagesHelp::write_log($request,$data->sysid,$data->dept_code,'Deleting recods');
-                $data->delete();
+                $old = Warehouse::where('uuid_rec',$uuid_rec)->first();
+                DataLog::create($sysid,8000,$data->sysid,$data->location_code,'WAREHOUSE','DELETED',$old,"-");
+                Warehouse::where('uuid_rec',$uuid_rec)->delete();
                 DB::commit();
                 return response()->success('Success','Hapus data berhasil');
-            } 
+            }
             catch(\Exception $e) {
                 DB::rollback();
                 return response()->error('',501,$e);
@@ -60,10 +67,10 @@ class WarehouseController extends Controller
     }
 
     public function edit(Request $request){
-        $sysid=isset($request->sysid) ? $request->sysid :'-1';
+        $uuid_rec=isset($request->uuid_rec) ? $request->uuid_rec :'';
         $data=Warehouse::selectRaw("sysid,location_code,location_name,inventory_account,cogs_account,expense_account,variant_account,
             warehouse_type,is_received,is_sales,is_distribution,is_active")
-        ->where('sysid',$sysid)->first();
+        ->where('uuid_rec',$uuid_rec)->first();
         return response()->success('Success',$data);
     }
 
@@ -75,17 +82,17 @@ class WarehouseController extends Controller
         if ($type=='SALES') {
             $data=$data->where('is_sales','1');
         } else if ($type=='RECEIVE') {
-            $data=$data->where('is_received','1');            
+            $data=$data->where('is_received','1');
         } else if ($type=='DISTRIBUSTION') {
-            $data=$data->where('is_distribution','1');  
+            $data=$data->where('is_distribution','1');
         } else if ($type=='PRODUCTION') {
-            $data=$data->where('is_sales','1');            
+            $data=$data->where('is_sales','1');
         }
         $data=$data->orderBy('location_name')
         ->get();
         return response()->success('Success',$data);
     }
-    
+
     public function store(Request $request){
         $info = $request->json()->all();
         $row = $info['data'];
@@ -105,28 +112,36 @@ class WarehouseController extends Controller
         try {
             if ($opr=='inserted'){
                 $data = new Warehouse();
+                $data->uuid_rec=Str::uuid();
                 $data->warehouse_group=$row['warehouse_group'];
+                $operation='CREATED';
+                $old  = "-";
             } else if ($opr=='updated'){
-                $data = Warehouse::find($row['sysid']);
+                $data = Warehouse::where('uuid_re',$row['uuid_rec'])->first();
+                $old  = $data;
+                $operation='UPDATED';
+
             }
-            $data->location_code=$row['location_code'];
-            $data->location_name=$row['location_name'];
-            $data->inventory_account=$row['inventory_account'];
-            $data->cogs_account=$row['cogs_account'];
-            $data->expense_account=$row['expense_account'];
-            $data->variant_account=$row['variant_account'];
-            $data->warehouse_type=$row['warehouse_type'];
-            $data->is_received=$row['is_received'];
-            $data->is_sales=$row['is_sales'];
-            $data->is_distribution=$row['is_distribution'];
-            $data->is_active=$row['is_active'];
-            $data->update_userid=PagesHelp::UserID($request);
+            $data->location_code  = $row['location_code'];
+            $data->location_name  = $row['location_name'];
+            $data->inventory_account = $row['inventory_account'];
+            $data->cogs_account   = $row['cogs_account'];
+            $data->expense_account= $row['expense_account'];
+            $data->variant_account= $row['variant_account'];
+            $data->warehouse_type = $row['warehouse_type'];
+            $data->is_received    = $row['is_received'];
+            $data->is_sales       = $row['is_sales'];
+            $data->is_distribution= $row['is_distribution'];
+            $data->is_active      = $row['is_active'];
+            $data->update_userid  = PagesHelp::UserID($request);
             $data->save();
-            PagesHelp::write_log($request,$data->sysid,$data->dept_code,'Add/Update recods');
+            $data->refresh();
+            $new = $data;
+            DataLog::create($sysid,8000,$data->sysid,$data->location_code,'WAREHOUSE',$operation,$old,$old);
             DB::commit();
             return response()->success('Success','Simpan data berhasil');
         } catch(Exception $error) {
-            DB::rollback();    
-        }    
+            DB::rollback();
+        }
     }
 }

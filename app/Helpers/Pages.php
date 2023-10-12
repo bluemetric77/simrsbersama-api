@@ -29,7 +29,7 @@ class Pages
    {
       return null;
    }
-   
+
    public static function Users(Request $request) {
       $token = $request->header('x_jwt');
       $ses=USessions::from('o_sessions as a')
@@ -152,7 +152,7 @@ class Pages
       }
       return $value;
    }
-   public static function write_data($code,$type='C',$value){
+   public static function write_data($code,$type='C',$value=''){
       $data=DB::table('o_system')
             ->where('key_word',$code)
             ->first();

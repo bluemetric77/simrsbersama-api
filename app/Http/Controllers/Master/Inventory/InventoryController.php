@@ -73,7 +73,7 @@ class InventoryController extends Controller
                 $data->delete();
                 DB::commit();
                 return response()->success('Success','Hapus data berhasil');
-            } 
+            }
             catch(\Exception $e) {
                 DB::rollback();
                 return response()->error('',501,$e);
@@ -207,7 +207,7 @@ class InventoryController extends Controller
 
             $uploadedFile = $request->file('file');
             if ($uploadedFile){
-                $originalFile = $uploadedFile->getClientOriginalName();        
+                $originalFile = $uploadedFile->getClientOriginalName();
                 $originalFile = Date('Ymd-His')."-".$originalFile;
                 $directory="inventory";
                 $path = $uploadedFile->storeAs($directory,$originalFile);
@@ -218,9 +218,9 @@ class InventoryController extends Controller
             DB::commit();
             return response()->success('Success','Simpan data berhasil');
         } catch(Exception $error) {
-            DB::rollback();    
+            DB::rollback();
             return response()->error('',501,$error);
-        }    
+        }
     }
     public function download(Request $request)
     {
@@ -231,7 +231,7 @@ class InventoryController extends Controller
             if ($data->image!=''){
                 //$publicPath = \Storage::url($data->image);
                 $headers = array('Content-Type: application/image');
-                return Storage::download($data->image);            
+                return Storage::download($data->image);
             }
         } else {
               return response()->error('',301,'Dokumen tidak ditemukan');
@@ -261,5 +261,34 @@ class InventoryController extends Controller
         ->where('a.inventory_group',$group_name)->first();
         return response()->success('Success',$data);
     }
-    
+
+    public function stock(Request $request)
+    {
+        $filter = $request->filter;
+        $limit = isset($request->limit) ? $request->limit : 100;
+        $sorting = ($request->descending == "true") ? "desc":"asc";
+        $sortBy = $request->sortBy;
+        $location_id=isset($request->location_id) ? $request->location_id :'-1';
+        $status=isset($request->status) ? $request->status :'0';
+        $data=Inventory::from('m_items as a')
+        ->selectRaw("(a.sysid*100000)+b.location_id as _index,a.item_code,a.item_name1 as item_name,b.on_hand,b.on_order,b.on_demand,
+        b.on_request,b.on_delivery,b.nearest_expired_date,b.far_expired_date,b.location,b.minimum_stock,b.maximum_stock,
+        b.mou_inventory,c.location_code,c.location_name")
+        ->join("m_items_stock as b","a.sysid","=","b.item_sysid")
+        ->join("m_warehouse as c","b.location_id","c.sysid");
+        if ($status=='0') {
+            $data=$data->where('b.location_id',$location_id);
+        }
+        if (!($filter == '')) {
+            $filter = '%' . trim($filter) . '%';
+            $data = $data->where(function ($q) use ($filter) {
+                $q->where('a.item_code', 'like', $filter);
+                $q->orwhere('a.item_code_old', 'like', $filter);
+                $q->orwhere('item_name1', 'like', $filter);
+            });
+        }
+        $data = $data->orderBy($sortBy, $sorting)->paginate($limit);
+        return response()->success('Success', $data);
+    }
+
 }
