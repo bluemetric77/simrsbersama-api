@@ -160,8 +160,31 @@ Route::group(['prefix' => 'inventory','middleware'=>'appauth'], function () {
             Route::get('distribution/open', 'open');
             Route::get('distribution/detail', 'detail');
         });
+
         Route::controller(\Master\Inventory\InventoryController::class)->group(function () {
             Route::get('stock', 'stock');
+        });
+
+        Route::controller(\Inventory\ItemInOutController::class)->group(function () {
+            Route::get('inout', 'index');
+            Route::post('inout', 'store');
+            Route::get('inout/get', 'get');
+            Route::delete('inout', 'destroy');
+        });
+
+        Route::controller(\Inventory\ItemProductionController::class)->group(function () {
+            Route::get('production', 'index');
+            Route::post('production', 'store');
+            Route::post('production/result', 'store_result');
+            Route::get('production/get', 'get');
+            Route::delete('production', 'destroy');
+            Route::get('production/billofmaterial', 'get_item_production');
+        });
+
+        Route::controller(\Inventory\ItemAdjustmentController::class)->group(function () {
+            Route::get('adjustment', 'index');
+            Route::post('adjustment', 'store');
+            Route::get('adjustment/get', 'get');
         });
     });
 });
@@ -208,7 +231,15 @@ Route::group(['prefix' => 'master','middleware'=>'appauth'], function () {
             Route::post('/inventory-item', 'store');
             Route::get('/inventory-item/image/download', 'download');
             Route::get('/inventory-item/open', 'open');
+            Route::get('/inventory-item/open-stock', 'open_stock');
             Route::get('/inventory-item/getitem', 'get_item');
+            Route::get('/inventory-item/mou', 'index_mou');
+            Route::get('/inventory-item/mou/get', 'edit_mou');
+            Route::delete('/inventory-item/mou', 'destroy_mou');
+            Route::post('/inventory-item/mou', 'store_mou');
+            Route::get('/inventory-item/bom', 'bom_index');
+            Route::get('/inventory-item/bom/get', 'bom_get');
+            Route::post('/inventory-item/bom', 'bom_store');
         });
     });
 
@@ -322,79 +353,5 @@ Route::group(['prefix' => 'master', 'as' => 'master','middleware'=>'appauth'], f
     Route::get('/accounting/fiscal-year', 'Master\FiscalYearController@get');
     Route::post('/accounting/fiscal-year', 'Master\FiscalYearController@post');
 });
-Route::group(['prefix' => 'customer-service', 'as' => 'customer-service','middleware'=>'appauth'], function () {
-    Route::get('/customer-price', 'CS\CustomerPriceController@index');
-    Route::post('/customer-price', 'CS\CustomerPriceController@post');
-    Route::delete('/customer-price', 'CS\CustomerPriceController@delete');
-    Route::get('/customer-price/get', 'CS\CustomerPriceController@get');
-    Route::get('/customer-price/list', 'CS\CustomerPriceController@getlist');
-    Route::get('/customer-price/open', 'CS\CustomerPriceController@open');
 
-    Route::get('/order', 'CS\CustomerOrderController@index');
-    Route::post('/order', 'CS\CustomerOrderController@post');
-    Route::delete('/order/cancel', 'CS\CustomerOrderController@cancel');
-    Route::delete('/order', 'CS\CustomerOrderController@delete');
-    Route::get('/order/get', 'CS\CustomerOrderController@get');
-    Route::get('/order/list', 'CS\CustomerOrderController@getlist');
-});
 
-Route::group(['prefix' => 'operation', 'as' => 'operation','middleware'=>'appauth'], function () {
-    Route::get('/work-order', 'Operation\OperationController@index');
-    Route::post('/work-order', 'Operation\OperationController@post');
-    Route::delete('/work-order', 'Operation\OperationController@delete');
-    Route::delete('/work-order/cancel', 'Operation\OperationController@cancel');
-    Route::get('/work-order/get', 'Operation\OperationController@get');
-    Route::get('/work-order/get2', 'Operation\OperationController@get2');
-    Route::get('/work-order/get3', 'Operation\OperationController@get3');
-    Route::get('/work-order/list', 'Operation\OperationController@getlist');
-    Route::get('/work-order/lbo', 'Operation\OperationController@get_lbo');
-    Route::post('/work-order/lbo', 'Operation\OperationController@post_lbo');
-    Route::post('/work-order/closed-lbo', 'Operation\OperationController@post_closedlbo');
-    Route::get('/work-order/print', 'Operation\OperationController@print_sj');
-    Route::get('/work-order/lbo/print', 'Operation\OperationController@print_lbo');
-
-    Route::get('/monitoring-unit', 'Operation\MonitoringController@units');
-    Route::get('/monitoring-unit-state', 'Operation\MonitoringController@units_state');
-    Route::get('/monitoring-unit/operation', 'Operation\MonitoringController@get_operation');
-    Route::post('/monitoring-unit/operation', 'Operation\MonitoringController@post_operation');
-    Route::get('/monitoring-unit/spj', 'Operation\MonitoringController@spj');
-});
-
-Route::group(['prefix' => 'acc', 'as' => 'acc','middleware'=>'appauth'], function () {
-    Route::get('/journal', 'Accounting\GLeadgerController@show');
-    Route::get('/journal/get', 'Accounting\GLeadgerController@get');
-    Route::delete('/journal', 'Accounting\GLeadgerController@destroy');
-    Route::get('/journal/print', 'Accounting\GLeadgerController@print');
-    Route::post('/journal', 'Accounting\GLeadgerController@post');
-    Route::get('/inqjournal', 'Accounting\GLeadgerController@inquery');
-    Route::get('/inqjournalxls', 'Accounting\GLeadgerController@inqueryxls');
-    Route::get('/generalledger', 'Master\AccountController@GeneralLedger');
-    Route::get('/generalledger/report', 'Master\AccountController@GeneralLedgerXLS');
-    Route::get('/mutation', 'Master\AccountController@Mutation');
-    Route::get('/printgl', 'Accounting\GLeadgerController@Print');
-});
-
-Route::group(['prefix' => 'finance', 'as' => 'finance','middleware'=>'appauth'], function () {
-    Route::get('/cash_bank', 'Finance\CashBankController@show');
-    Route::get('/cash_bank/get', 'Finance\CashBankController@get');
-    Route::get('/cash_bank/get2', 'Finance\CashBankController@get2');
-    Route::delete('/cash_bank', 'Finance\CashBankController@destroy');
-    Route::get('/cash_bank/mutation', 'Finance\CashBankController@mutation');
-    Route::get('/cash-bank/balance', 'Finance\CashBankController@state_mutation');
-    Route::get('/cash_bank/print', 'Finance\CashBankController@print');
-    Route::get('/cash_bank/print2', 'Finance\CashBankController@print2');
-    Route::get('/cash_bank/open-lbo', 'Finance\CashBankController@openLBO');
-    Route::get('/cash_bank/open-lbo/get', 'Finance\CashBankController@GetLBO');
-    Route::get('/cash_bank/lbo', 'Finance\CashBankController@Cashier_LBO');
-    Route::post('/cash_bank/lbo', 'Finance\CashBankController@post_LBO');
-    Route::post('/cash_bank/cashier_ujo', 'Finance\CashBankController@post_LBO');
-    Route::get('/cash_bank/cashier_ujo', 'Finance\CashBankController@get_cashier_ujo');
-    Route::get('/cash_bank/cashier_ujo/print', 'Finance\CashBankController@print_lbocashier');
-    Route::post('/cash_bank/droping', 'Finance\CashBankController@post_droping');
-    Route::get('/cash_bank/droping/open', 'Finance\CashBankController@open_droping');
-    Route::post('/cash_bank/droping-receive', 'Finance\CashBankController@post_receive_droping');
-    Route::get('/ujo', 'Finance\UJOController@show');
-    Route::post('/cash_bank/transaction-out', 'Finance\CashBankController@post_cashbankout');
-    Route::post('/cash_bank/transaction-in', 'Finance\CashBankController@post_cashbankin');
-
-});

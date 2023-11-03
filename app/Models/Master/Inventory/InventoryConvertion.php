@@ -5,9 +5,9 @@ namespace App\Models\Master\Inventory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
 
-class Inventory extends Model
+class InventoryConvertion extends Model
 {
-    protected $table = 'm_items';
+    protected $table = 'm_items_convertions';
     protected $primaryKey = 'sysid';
     public $timestamps = true;
     const CREATED_AT = 'create_date';
@@ -39,6 +39,5 @@ class Inventory extends Model
         'maximum_stock'=>'float',
         'on_request'=>'float',
         'on_delivery'=>'float',
-        'quantity_production'=>'float'
     ];
 }

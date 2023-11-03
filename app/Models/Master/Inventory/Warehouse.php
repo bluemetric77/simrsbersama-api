@@ -18,5 +18,7 @@ class Warehouse extends Model
         'is_sales'=>'string',
         'is_distribution'=>'string',
         'is_active'=>'string',
+        'is_direct_purchase'=>'string',
+        'is_production'=>'string'
     ];
 }

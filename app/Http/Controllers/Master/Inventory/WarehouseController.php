@@ -24,15 +24,20 @@ class WarehouseController extends Controller
         $is_active=isset($request->is_active) ? $request->is_active : false;
         $is_all=isset($request->all) ? $request->all : '0';
         if ($is_active==true) {
-            $data=Warehouse::selectRaw("sysid,location_code,location_name,warehouse_group,is_received,is_sales,is_distribution,uuid_rec");
+            $data=Warehouse::selectRaw("sysid,location_code,location_name,warehouse_group,is_received,is_sales,is_distribution,
+            is_production,inventory_account,expense_account,variant_account,cogs_account,is_direct_purchase,uuid_rec");
             if ($is_all=='0') {
                 $data=$data->where('warehouse_group',$group_name);
             }
-            $data=$data->where('is_active',true);
+            $data=$data->where('is_active','1');
         } else {
-            $data=Warehouse::selectRaw("sysid,location_code,location_name,warehouse_group,inventory_account,cogs_account,expense_account,variant_account,
-            warehouse_type,is_received,is_sales,is_distribution,is_active,update_userid,create_date,update_date,uuid_rec")
-            ->where('warehouse_group',$group_name);
+            $data=Warehouse::from("m_warehouse as a")
+            ->selectRaw("a.sysid,a.location_code,a.location_name,a.warehouse_group,a.inventory_account,a.cogs_account,a.expense_account,a.variant_account,
+            a.warehouse_type,a.is_received,a.is_direct_purchase,a.is_sales,a.is_distribution,a.is_production,a.is_active,a.uuid_rec,b.full_name as create_by,a.create_date,
+            c.full_name as update_by,a.update_date")
+            ->leftjoin("o_users as b","a.create_by","=","b.sysid")
+            ->leftjoin("o_users as c","a.update_by","=","c.sysid")
+            ->where('a.warehouse_group',$group_name);
         }
         if (!($filter == '')) {
             $filter = '%' . trim($filter) . '%';
@@ -69,7 +74,7 @@ class WarehouseController extends Controller
     public function edit(Request $request){
         $uuid_rec=isset($request->uuid_rec) ? $request->uuid_rec :'';
         $data=Warehouse::selectRaw("sysid,location_code,location_name,inventory_account,cogs_account,expense_account,variant_account,
-            warehouse_type,is_received,is_sales,is_distribution,is_active")
+            warehouse_type,is_received,is_sales,is_distribution,is_direct_purchase,is_production,is_active,uuid_rec")
         ->where('uuid_rec',$uuid_rec)->first();
         return response()->success('Success',$data);
     }
@@ -110,17 +115,18 @@ class WarehouseController extends Controller
         }
         DB::beginTransaction();
         try {
-            if ($opr=='inserted'){
+            $data = Warehouse::where('uuid_rec',$row['uuid_rec'])->first();
+            if (!($data)) {
                 $data = new Warehouse();
-                $data->uuid_rec=Str::uuid();
-                $data->warehouse_group=$row['warehouse_group'];
+                $data->uuid_rec        = Str::uuid();
+                $data->warehouse_group = $row['warehouse_group'];
+                $data->create_by       = PagesHelp::Users($request)->sysid;
                 $operation='CREATED';
                 $old  = "-";
             } else if ($opr=='updated'){
-                $data = Warehouse::where('uuid_re',$row['uuid_rec'])->first();
-                $old  = $data;
-                $operation='UPDATED';
-
+                $old              = $data;
+                $operation        = 'UPDATED';
+                $data->update_by  = PagesHelp::Users($request)->sysid;
             }
             $data->location_code  = $row['location_code'];
             $data->location_name  = $row['location_name'];
@@ -132,12 +138,13 @@ class WarehouseController extends Controller
             $data->is_received    = $row['is_received'];
             $data->is_sales       = $row['is_sales'];
             $data->is_distribution= $row['is_distribution'];
+            $data->is_direct_purchase = $row['is_direct_purchase'];
+            $data->is_production  = $row['is_production'];
             $data->is_active      = $row['is_active'];
-            $data->update_userid  = PagesHelp::UserID($request);
             $data->save();
             $data->refresh();
             $new = $data;
-            DataLog::create($sysid,8000,$data->sysid,$data->location_code,'WAREHOUSE',$operation,$old,$old);
+            DataLog::create(-1,9999,$data->sysid,$data->location_code,'WAREHOUSE',$operation,$old,$old);
             DB::commit();
             return response()->success('Success','Simpan data berhasil');
         } catch(Exception $error) {

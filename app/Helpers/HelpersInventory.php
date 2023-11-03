@@ -48,7 +48,7 @@ class HelpersInventory {
                 ->where('a.line_state',$line_state)
                 ->where('a.is_deleted','0')
                 ->get();
-                
+
                 #Recalculation before
                 $data=ItemMutations::selectRaw('location_id,item_sysid,item_code,-((qty_in-qty_out)+qty_adjustment) as mutation,mou_inventory,price,-total as total')
                 ->where('doc_sysid',$sysid)
@@ -130,7 +130,7 @@ class HelpersInventory {
             }
         }
 
-        if (($operation == 'inserted') || ($operation == 'updated')) {
+        if (($operation == 'inserted') || ($operation == 'updated') || ($flags=='VOID')) {
             if ($flags=='VOID'){
                 DB::insert("INSERT INTO t_item_mutations(doc_sysid,doc_type,doc_number,ref_number,location_id,item_sysid,line_state,item_code,item_name,ref_date,ref_time,
                     mou_inventory,qty_in,qty_out,notes,price,purchase_price,total,entry_date,entry_by)
@@ -173,6 +173,41 @@ class HelpersInventory {
                     SELECT a.sysid,?,a.doc_number,a.ref_number,a.location_id_to,b.item_sysid,'N',b.item_code,b.item_name,DATE(a.received_date),TIME(a.received_date),
                     b.mou_inventory,ABS(b.quantity_update),CONCAT('Penerimaan distribusi barang [',a.doc_number,'] ',a.location_name_from,' ke ',a.location_name_to),b.item_cost,b.line_cost,NOW(),a.received_by
                     FROM t_items_distribution1 a INNER JOIN t_items_distribution2 b ON a.sysid=b.sysid
+                    WHERE a.sysid=?",[$source,$sysid]);
+            }  else if ($source=='INVENTORY-IN'){
+                DB::insert("INSERT INTO t_item_mutations(doc_sysid,doc_type,doc_number,ref_number,location_id,item_sysid,line_state,item_code,item_name,ref_date,ref_time,
+                    mou_inventory,qty_in,notes,price,total,entry_date,entry_by)
+                    SELECT a.sysid,?,a.doc_number,a.ref_number,a.location_id,b.item_sysid,'N',b.item_code,b.item_name,a.ref_date,a.ref_time,
+                    b.mou_inventory,ABS(b.quantity_update),CONCAT('Pengeluaran barang [',a.doc_number,']',a.remarks),b.item_cost,b.line_cost,NOW(),a.create_by
+                    FROM t_items_inout1 a INNER JOIN t_items_inout2 b ON a.sysid=b.sysid
+                    WHERE a.sysid=? AND a.line_type=?",[$source,$sysid,'IN']);
+            }  else if ($source=='INVENTORY-OUT'){
+                DB::insert("INSERT INTO t_item_mutations(doc_sysid,doc_type,doc_number,ref_number,location_id,item_sysid,line_state,item_code,item_name,ref_date,ref_time,
+                    mou_inventory,qty_out,notes,price,total,entry_date,entry_by)
+                    SELECT a.sysid,?,a.doc_number,a.ref_number,a.location_id,b.item_sysid,'N',b.item_code,b.item_name,a.ref_date,a.ref_time,
+                    b.mou_inventory,ABS(b.quantity_update),CONCAT('Pengeluaran barang [',a.doc_number,']',a.remarks),b.item_cost,b.line_cost,NOW(),a.create_by
+                    FROM t_items_inout1 a INNER JOIN t_items_inout2 b ON a.sysid=b.sysid
+                    WHERE a.sysid=? AND a.line_type=?",[$source,$sysid,'OUT']);
+            }  else if ($source=='BOM-PRODUCTION'){
+                DB::insert("INSERT INTO t_item_mutations(doc_sysid,doc_type,doc_number,ref_number,location_id,item_sysid,line_state,item_code,item_name,ref_date,ref_time,
+                    mou_inventory,qty_out,notes,price,total,entry_date,entry_by)
+                    SELECT a.sysid,?,a.doc_number,a.ref_number,a.location_id,b.item_sysid,'N',b.item_code,b.item_name,a.ref_date,a.ref_time,
+                    b.mou_inventory,ABS(b.quantity_update),CONCAT('Pengeluaran barang/material produksi [',a.doc_number,']',a.remarks),b.item_cost,b.line_cost,NOW(),a.create_by
+                    FROM t_items_production1 a INNER JOIN t_items_production2 b ON a.sysid=b.sysid
+                    WHERE a.sysid=?",[$source,$sysid]);
+            }  else if ($source=='PRODUCTION'){
+                DB::insert("INSERT INTO t_item_mutations(doc_sysid,doc_type,doc_number,ref_number,location_id,item_sysid,line_state,item_code,item_name,ref_date,ref_time,
+                    mou_inventory,qty_in,notes,price,total,entry_date,entry_by)
+                    SELECT a.sysid,?,a.doc_number,a.ref_number,a.location_id,a.item_sysid,'N',a.item_code,a.item_name,a.production_date,a.production_time,
+                    a.mou_inventory,ABS(a.output_production),CONCAT('Hasil produksi [',a.doc_number,']',a.remarks),a.cost_item,a.cost_production,NOW(),a.create_by
+                    FROM t_items_production1 a
+                    WHERE a.sysid=?",[$source,$sysid]);
+            }  else if ($source=='STOCK-ADJ'){
+                DB::insert("INSERT INTO t_item_mutations(doc_sysid,doc_type,doc_number,ref_number,location_id,item_sysid,line_state,item_code,item_name,ref_date,ref_time,
+                    mou_inventory,qty_adjustment,notes,price,total,entry_date,entry_by)
+                    SELECT a.sysid,?,a.doc_number,a.reference,a.location_id,b.item_sysid,'N',b.item_code,b.item_name,a.ref_date,a.ref_time,
+                    b.mou_inventory,b.adjustment_stock,CONCAT('Koreksi stock [',a.doc_number,']',a. notes),b.cost_adjustment,b.final_adjustment,NOW(),a.create_by
+                    FROM t_items_adjustment1 a INNER JOIN t_items_adjustment2 b ON a.sysid=b.sysid
                     WHERE a.sysid=?",[$source,$sysid]);
             }
         }
