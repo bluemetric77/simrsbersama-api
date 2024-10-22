@@ -11,8 +11,8 @@ class USessions extends Model
     protected $primaryKey = 'sign_code';
     protected $primaryType= 'string';
     public $timestamps = true;
-    const CREATED_AT = 'create_date';
-    const UPDATED_AT = 'update_date';
+    const CREATED_AT = 'created_date';
+    const UPDATED_AT = 'updated_date';
 
     public static function user($token){
         $session=USessions::selectRaw("user_sysid")->where('sign_code',$token)->first();

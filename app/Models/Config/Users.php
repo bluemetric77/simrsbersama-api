@@ -12,8 +12,8 @@ class Users extends Model
     protected $table = 'o_users';
     protected $primaryKey = 'sysid';
     public $timestamps = true;
-    const CREATED_AT = 'create_date';
-    const UPDATED_AT = 'update_date';
+    const CREATED_AT = 'created_date';
+    const UPDATED_AT = 'updated_date';
     protected $casts=[
         'is_active'=>'string',
         'is_group'=>'string'

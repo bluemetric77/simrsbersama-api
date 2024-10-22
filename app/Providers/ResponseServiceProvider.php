@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use App\Models\Config\USessions;
+use Illuminate\Support\Facades\Hash;
 
 
 
@@ -33,17 +34,16 @@ class ResponseServiceProvider extends ServiceProvider
 
         $except = $this->except;
         $factory->macro('success', function ($message = '', $data = null, $rowcount = 0,$respon_code=200) use ($factory,$request,$except) {
-            $jwt = $request->header('x_jwt');
-            $md5 = md5($jwt);
-            $uri=strtolower($request->getPathInfo());
-            $ignored=false;
+            $jwt     = $request->header('x_jwt');
+            $uri     = strtolower($request->getPathInfo());
+            $ignored = false;
             foreach ($except as $value) {
                 $value=strtolower('/api/'.$value);
-                if ($uri==$value){ 
+                if ($uri==$value){
                     $ignored = true;
                 }
             }
-            
+
             $method = $request->method();
             if ($request->isMethod('post')) {
                 $respon_code=201;
@@ -58,7 +58,7 @@ class ResponseServiceProvider extends ServiceProvider
                 'respon_code'=>$respon_code,
                 'message'=>$message
             ];
-            
+
             $info = [
                 'success'=>true,
                 'rowcount'=>$rowcount,
@@ -67,25 +67,26 @@ class ResponseServiceProvider extends ServiceProvider
             $format = [
                 'header'=>$header,
                 'contents'=>$info
-            ];  
+            ];
 
-            if ((!($jwt=="")) && ($ignored==false)) {    
-                $session=USessions::selectRaw("sign_code,now() as curr_time,refresh_date")
-                ->where('sign_code',$md5)->first();
+            if ((!($jwt=="")) && ($ignored==false)) {
+                $session=USessions::selectRaw("sign_code,now() as curr_time,user_name,refresh_date")
+                ->where('sign_code',$jwt)
+                ->first();
                 if ($session) {
                     if ($session->curr_time>$session->refresh_date){
-                        $user = decrypt($jwt);
-                        $token = encrypt($user);
-                        $md5=md5($token);
+                        $token=Hash::make($session->user_name.$this->salt.Date('YmdHis'));
                         $refresh_date =  date('Y-m-d H:i:s', strtotime('+30 minutes'));
-                        USessions::where('sign_code',$session->sign_code) 
-                            ->update(['sign_code'=>$md5,
+                        USessions::where('sign_code',$session->sign_code)
+                            ->update(['sign_code'=>$token,
                                       'refresh_date'=>$refresh_date]);
                         $format = [
                                 'header'=>$header,
                                 'contents'=>$info,
-                                'new_jwt'=>$token
-                            ];    
+                                'new_jwt'=>$token,
+                                'time_stamp'=>$session->curr_time,
+                                'refresh'=>$session->refresh_date
+                            ];
                     }
                 }
             }
@@ -106,7 +107,7 @@ class ResponseServiceProvider extends ServiceProvider
             $format = [
                 'header'=>$header,
                 'contents'=>$info
-            ];    
+            ];
             return $factory->make($format);
         });
     }

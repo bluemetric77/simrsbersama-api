@@ -8,209 +8,209 @@ use Illuminate\Http\Request;
 use App\Models\Config\Parameters;
 use App\Models\Config\USessions;
 use App\Models\Config\Objects;
+use App\Models\Config\SeriesNumber;
+use App\Models\Config\SeriesDocument;
+use App\Models\Config\SeriesJurnal;
 use App\Models\Setup\UserLogs;
 use Illuminate\Support\Facades\Route;
 
 class Pages
 {
-   public static function DataDef($id)
+   public static function PageEnviroment($url)
    {
       $data = Objects::selectRaw("sysid,column_def,title as title_page,api_link,security")
-         ->where('url_link', $id)
+         ->where('url_link', $url)
          ->first();
       return $data;
    }
-   public static function userinfo($request)
-   {
-      $jwt = $request->header('x_jwt');
-      return $jwt;
-   }
-   public static function messages()
-   {
-      return null;
+
+    public static function Session() {
+        $request = request();
+        $token   = $request->header('x_jwt');
+        $session = USessions::from('o_sessions as a')
+        ->selectRaw("a.sign_code,a.user_sysid as sysid,a.user_name,a.ip_number,a.expired_date,a.is_locked,
+        b.sysid,b.full_name,b.user_level,b.is_active,b.is_group,b.email,now() as curr_time")
+        ->join('o_users as b','a.user_sysid','=','b.sysid')
+        ->where('sign_code',isset($token) ? $token :'')
+        ->first();
+
+        return isset($session) ? $session : null;
+    }
+
+    public static function SeriesField($table){
+        $TabelInfo = DB::table('pg_class')
+        ->selectRaw("oid,relname")
+        ->where('relname',isset($table) ? $table : '')
+        ->first();
+
+        if (!($TabelInfo)) {
+            return 'Table name '.$table.' not found';
+        }
+
+        $SerialNumber = SeriesNumber::where('table_id',$TabelInfo->oid)->first();
+        if (!($SerialNumber)) {
+            $SerialNumber = new SeriesNumber();
+            $SerialNumber->table_id   = $TabelInfo->oid;
+            $SerialNumber->table_name = $TabelInfo->relname;
+            $SerialNumber->start_number   = 1;
+            $SerialNumber->increment      = 1;
+            $SerialNumber->current_number = 0;
+        }
+
+        $SerialNumber->current_number++;
+        $SerialNumber->save();
+
+        return $SerialNumber->current_number;
+    }
+
+    public static function Profile(){
+      $profile = DB::table('m_profile')
+      ->selectRaw('name,address,url,photo,city,phone,folder_api')
+      ->where('sysid',1)
+      ->first();
+
+      return $profile;
    }
 
-   public static function Users(Request $request) {
-      $token = $request->header('x_jwt');
-      $ses=USessions::from('o_sessions as a')
-      ->selectRaw("a.sign_code,a.user_sysid as sysid,a.user_name,a.ip_number,a.expired_date,a.is_locked,
-      b.sysid,b.full_name,b.role,b.user_level,b.is_active,b.is_group,b.email")
-      ->join('o_users as b','a.user_sysid','=','b.sysid')
-      ->where('sign_code',$token)->first();
-      return isset($ses) ? $ses : null;
-   }
-
-   public static function UserID($request){
-      $token = $request->header('x_jwt');
-      $ses=USessions::selectRaw("user_name")->where('sign_code',$token)->first();
-      return isset($ses->user_name) ? $ses->user_name:'N/A';
-   }
-
-   public static function Profile(){
-      $data = DB::table('m_profile')->selectRaw('name,address,url,photo,city,phone,folder_api')->where('sysid',1)->first();
-      return $data;
-   }
-
-   public static function GetDocseries($prefix,$docDate){
-		$realdate = date_create($docDate);
-		$year_period = date_format($realdate, 'Y');
-      $month_period = date_format($realdate, 'm');
-      $data= DB::table('o_series_document')
-         ->select('prefix_code','year_period','month_period','numbering')
-         ->where('prefix_code',$prefix)
-         ->where('year_period',$year_period)
-         ->where('month_period',$month_period)
-         ->first();
-      if ($data==null) {
-         DB::table('o_series_document')
-         ->insert(
+   public static function DocumentSeries($prefix,$docDate){
+		$realdate     = date_create($docDate);
+		$year_period  = date_format($realdate, 'Y');
+        $month_period = date_format($realdate, 'm');
+        $data= SeriesDocument::select('prefix_code','year_period','month_period','numbering')
+        ->where('prefix_code',$prefix)
+        ->where('year_period',$year_period)
+        ->where('month_period',$month_period)
+        ->first();
+        if (!($data)) {
+            SeriesDocument::insert(
             ['prefix_code'=>$prefix,
-             'year_period'=>$year_period,
-             'month_period'=>$month_period,
-             'numbering'=>1]
+            'year_period'=>$year_period,
+            'month_period'=>$month_period,
+            'numbering'=>0]);
 
-         );
-         $counter=1;
-      }  else {
-         $counter=intval($data->numbering)+1;
-         DB::table('o_series_document')
-            ->where('prefix_code',$prefix)
-            ->where('year_period',$year_period)
-            ->where('month_period',$month_period)
-            ->update(['numbering'=>$counter]);
-      }
-      $year = substr($year_period, 2, 2);
-      $series = $prefix . '-' . $year . $month_period . str_pad((string) $counter, 4, '0', STR_PAD_LEFT);
-      return $series;
-   }
-   public static function GetVoucherseries($prefix,$docDate){
+            $data->refresh();
+        }
+
+        $counter=$data->numbering +1;
+        SeriesDocument::where('prefix_code',$prefix)
+        ->where('year_period',$year_period)
+        ->where('month_period',$month_period)
+        ->update(['numbering'=>$counter]);
+
+        $year = substr($year_period, 2, 2);
+        $series = $prefix . '-' . $year . $month_period . str_pad((string) $counter, 4, '0', STR_PAD_LEFT);
+
+        return $series;
+    }
+
+    public static function GLSeries($prefix,$docDate){
 		$realdate = date_create($docDate);
 		$year_period = date_format($realdate, 'Y');
-      $month_period = date_format($realdate, 'm');
-      $data= DB::table('o_series_jurnal')
-         ->select('series_code','fiscal_year','fiscal_month','counter')
-         ->where('series_code',$prefix)
-         ->where('fiscal_year',$year_period)
-         ->where('fiscal_month',$month_period)
-         ->first();
-      if ($data==null) {
-         DB::table('o_series_jurnal')
-         ->insert(
+        $month_period = date_format($realdate, 'm');
+        $data= SeriesJournal::select('series_code','fiscal_year','fiscal_month','counter')
+        ->where('series_code',$prefix)
+        ->where('fiscal_year',$year_period)
+        ->where('fiscal_month',$month_period)
+        ->first();
+
+        if (!($data)) {
+            SeriesJournal::insert(
             ['series_code'=>$prefix,
              'fiscal_year'=>$year_period,
              'fiscal_month'=>$month_period,
-             'counter'=>1]
+             'counter'=>1]);
+        }
+        $data->refresh();
+        SeriesJournal::where('series_code',$prefix)
+        ->where('fiscal_year',$year_period)
+        ->where('fiscal_month',$month_period)
+        ->update(['counter'=>$counter]);
 
-         );
-         $counter=1;
-      }  else {
-         $counter=intval($data->counter)+1;
-         DB::table('o_series_jurnal')
-            ->where('series_code',$prefix)
-            ->where('fiscal_year',$year_period)
-            ->where('fiscal_month',$month_period)
-            ->update(['counter'=>$counter]);
-      }
-      $year = substr($year_period, 2, 2);
-      $series = $year . $month_period . '-'.str_pad((string) $counter, 5, '0', STR_PAD_LEFT);
-      return $series;
-   }
-   public static function get_data($code,$type='C'){
-      $value='';
-      $data=DB::table('o_system')
-            ->where('key_word',$code)
-            ->first();
-      if (!($data)){
-         DB::table('o_system')->insert([
+        $year = substr($year_period, 2, 2);
+        $series = $year . $month_period . '-'.str_pad((string) $counter, 5, '0', STR_PAD_LEFT);
+        return $series;
+    }
+
+   public static function GetVariable($code,$type='C'){
+        $value='';
+        $data=Parameters::where('key_word',$code)
+        ->first();
+        if (!($data)){
+            Parameters::insert([
             'key_word'=>$code,
-            'key_type'=>'C',
+            'key_type'=>$type,
             'key_length'=>1000
-         ]);
-         if ($type=='C'){
-            $value='';
-         } else if ($type=='I'){
-            $value=-1;
-         } else if ($type=='N'){
-            $value=0;
-         } else if ($type=='D'){
-            $value=date();
-         } else if ($type=='B'){
-            $value=false;
-         }
-      } else {
-         if ($type=='C'){
-            $value=$data->key_value_nvarchar;
-         } else if ($type=='I'){
-            $value=(int)$data->key_value_integer;
-         } else if ($type=='N'){
-            $value=(float)$data->key_value_decimal;
-         } else if ($type=='D'){
-            $value=date_create($data->key_value_date);
-         } else if ($type=='B'){
-            $value=(bool)$data->key_value_boolean;
-         }
-      }
-      return $value;
-   }
-   public static function write_data($code,$type='C',$value=''){
-      $data=DB::table('o_system')
-            ->where('key_word',$code)
-            ->first();
-      if (!($data)){
-         DB::table('o_system')->insert([
-            'key_word'=>$code,
-            'key_type'=>'C',
-            'key_length'=>1000
-         ]);
-      }
-      $rec= array();
-      if ($type=='C'){
-         $rec=array('key_value_nvarchar'=>$value);
-      } else if ($type=='I'){
-         $rec=array('key_value_integer'=>$value);
-      } else if ($type=='N'){
-         $rec=array('key_value_decimal'=>$value);
-      } else if ($type=='D'){
-         $rec=array('key_value_date'=>$value);
-      } else if ($type=='B'){
-         $rec=array('key_value_boolean'=>$value);
-      }
-      DB::table('o_system')
-         ->where('key_word',$code)
-         ->update($rec);
+             ]);
+        }
+        $data->refresh();
+
+        if ($type=='C') {
+            $value = $data->key_value_nvarchar;
+        } else if ($type=='I'){
+            $value = $data->key_value_integer;
+        }else if ($type=='N'){
+            $value = (float)$data->key_value_integer;
+        }else if ($type=='D'){
+            $value =date_create($data->key_value_date);
+        }else if ($type=='B'){
+            $value =(bool)$data->key_value_boolean;
+        }
+
+        return $value;
    }
 
-   public static function my_server_url()
+   public static function WriteVariable($code,$type,$value=''){
+        $data=Parameters::where('key_word',$code)
+        ->first();
+        if (!($data)){
+            Parameters::insert([
+            'key_word'=>$code,
+            'key_type'=>$type,
+            'key_length'=>1000
+             ]);
+        }
+        $rec= array();
+        if ($type=='C'){
+            $rec=array('key_value_nvarchar'=>$value);
+        } else if ($type=='I'){
+            $rec=array('key_value_integer'=>$value);
+        } else if ($type=='N'){
+            $rec=array('key_value_decimal'=>$value);
+        } else if ($type=='D'){
+            $rec=array('key_value_date'=>$value);
+        } else if ($type=='B'){
+            $rec=array('key_value_boolean'=>$value);
+        }
+        Parameters::where('key_word',$code)
+        ->update($rec);
+   }
+
+    public static function ServerUrl()
     {
-      $profile=Parameters::selectRaw("key_value_nvarchar")
-      ->where('key_word','CONFIG_API')->first();
-      $folder="";
-      if ($profile){
-         $folder=$profile->key_value_nvarchar;
-         if (!($folder=="")){
-            $folder="/".$folder;
-         }
-      }
-      $server_name = $_SERVER['SERVER_NAME'];
-      if (!in_array($_SERVER['SERVER_PORT'], [80, 443])) {
-            $port = ":$_SERVER[SERVER_PORT]";
-      } else {
-            $port = '';
-      }
-      if (!empty($_SERVER['HTTPS']) && (strtolower($_SERVER['HTTPS']) == 'on' || $_SERVER['HTTPS'] == '1')) {
-            $scheme = 'https';
-      } else {
-            $scheme = 'http';
-      }
+        $profile=Parameters::selectRaw("key_value_nvarchar")
+        ->where('key_word','CONFIG_API')->first();
+        $folder="";
+        if ($profile){
+            $folder=$profile->key_value_nvarchar;
+            if (!($folder=="")){
+                $folder="/".$folder;
+            }
+        }
+        $server_name = $_SERVER['SERVER_NAME'];
 
-      return $scheme.'://'.$server_name.$port.$folder;
+        $port = (!in_array($_SERVER['SERVER_PORT'], [80, 443])) ? ":".$_SERVER['SERVER_PORT'] : "";
+
+        $scheme = (!empty($_SERVER['HTTPS']) && (strtolower($_SERVER['HTTPS']) == 'on' || $_SERVER['HTTPS'] == '1')) ?'https' :'http';
+
+        return $scheme.'://'.$server_name.$port.$folder;
    }
 
-   public static function month($index)
+   public static function LocalMonth($MonthIndex)
    {
       $months=['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
         'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-      return $months[$index-1];
+
+      return $months[$MonthIndex-1];
    }
 
    public static function Terbilang( $num ,$dec=4){
@@ -398,31 +398,9 @@ class Pages
 		}
       curl_close($ch);
       return $info;
-   }
+    }
 
-   public static function write_log(Request $request,$sysid,$doc_number,$message) {
-      $uri = $request->path();
-      $data=$request->json()->all();
-      $data=json_encode($data);
-      $user_name=Pages::UserID($request);
-      $route = Route::current(); // Illuminate\Routing\Route
-      $name = Route::currentRouteName(); // string
-      $action = Route::currentRouteAction(); // string
-      UserLogs::insert([
-         'create_date'=>Date('Y-m-d H:i:s'),
-         'user_name'=>$user_name,
-         'module'=>$name.'^'.$action,
-         'action'=>$request->method(),
-         'uri_link'=>url()->full(),
-         'document_sysid'=>$sysid,
-         'document_number'=>$doc_number,
-         'descriptions'=>$message,
-         'data'=>$data
-
-      ]);
-   }
-
-   public static function convert_minutes($minute) {
+    public static function convert_minutes($minute) {
       $minute_text='';
       if ($minute>1440) {
          $day=floor($minute/1440);

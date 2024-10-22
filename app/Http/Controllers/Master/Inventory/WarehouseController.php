@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Master\Inventory;
 
 use App\Models\Master\Inventory\Warehouse;
+use App\Models\Inventory\ItemsStock;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ class WarehouseController extends Controller
     {
         $filter = $request->filter;
         $limit = isset($request->limit) ? $request->limit : 100;
-        $descending = $request->descending == "true";
+        $sorting = ($request->descending == "true") ? "desc" :"asc";
         $sortBy = $request->sortBy;
         $group_name=isset($request->group_name) ? $request->group_name : 'MEDICAL';
         $is_active=isset($request->is_active) ? $request->is_active : false;
@@ -46,7 +47,7 @@ class WarehouseController extends Controller
                 $q->orwhere('location_name', 'like', $filter);
             });
         }
-        $data = $data->orderBy($sortBy, ($descending) ? 'desc':'asc')->paginate($limit);
+        $data = $data->orderBy($sortBy, $sorting)->paginate($limit);
         return response()->success('Success', $data);
     }
 
@@ -54,15 +55,18 @@ class WarehouseController extends Controller
         $uuid_rec=isset($request->uuid_rec) ? $request->uuid_rec :'';
         $data=Warehouse::where('uuid_rec',$uuid_rec)->first();
         if ($data) {
+            if (ItemsStock::where('location_id',$data->sysid)->exists()) {
+                return response()->error('',501,'Lokasi/gudang tersebut sudah link dengan item barang');
+            }
             DB::beginTransaction();
             try{
                 $old = Warehouse::where('uuid_rec',$uuid_rec)->first();
-                DataLog::create($sysid,8000,$data->sysid,$data->location_code,'WAREHOUSE','DELETED',$old,"-");
+                DataLog::create(-1,8000,$data->sysid,$data->location_code,'WAREHOUSE','DELETED',$old,"-");
                 Warehouse::where('uuid_rec',$uuid_rec)->delete();
                 DB::commit();
                 return response()->success('Success','Hapus data berhasil');
             }
-            catch(\Exception $e) {
+            catch(Exception $e) {
                 DB::rollback();
                 return response()->error('',501,$e);
             }
@@ -106,9 +110,11 @@ class WarehouseController extends Controller
         [
             'location_code'=>'bail|required',
             'location_name'=>'bail|required',
+            'warehouse_type'=>'bail|required'
         ],[
             'location_code.required'=>'Kode gudang diisi',
             'location_name.required'=>'Nama gudang diisi',
+            'warehouse_type.required'=>'Tipe gudang/lokasi harus diisi'
         ]);
         if ($validator->fails()) {
             return response()->error('',501,$validator->errors()->first());
@@ -121,12 +127,14 @@ class WarehouseController extends Controller
                 $data->uuid_rec        = Str::uuid();
                 $data->warehouse_group = $row['warehouse_group'];
                 $data->create_by       = PagesHelp::Users($request)->sysid;
+                $data->create_date     = Date('Y-m-d H:i:s');
                 $operation='CREATED';
                 $old  = "-";
-            } else if ($opr=='updated'){
+            } else {
                 $old              = $data;
                 $operation        = 'UPDATED';
                 $data->update_by  = PagesHelp::Users($request)->sysid;
+                $data->update_date= Date('Y-m-d H:i:s');
             }
             $data->location_code  = $row['location_code'];
             $data->location_name  = $row['location_name'];

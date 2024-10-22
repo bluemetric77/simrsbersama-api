@@ -17,18 +17,29 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
-Route::get('profile', 'Config\CompanyController@profiles');
-Route::get('sites', 'Config\CompanyController@getSites');
-Route::post('login', 'Config\SecurityController@checklogin');
-Route::post('logout', 'Config\SecurityController@logout');
-Route::get('/access/securitypage', 'Config\SecurityController@Verified');
-Route::get('userprofile', 'Config\UserController@profile');
-Route::get('/home/columndef', 'Config\HomeController@Datadef');
 
-Route::get('/home/item', 'Config\HomeController@getItem');
-Route::get('/home/reports', 'Config\HomeController@getReport');
 
-Route::get('/access/pageaccess', 'Config\SecurityController@getSecurityForm');
+Route::controller(\Config\HomeController::class)->group(function () {
+    Route::get('/home/page-environment', 'PageEnvironment');
+    Route::get('/home/item', 'ObjectItem');
+    Route::get('/home/reports', 'ObjectReport');
+});
+
+Route::controller(\Config\CompanyController::class)->group(function () {
+    Route::get('profile', 'profiles');
+    Route::get('sites', 'getSites');
+});
+
+Route::controller(\Config\UserController::class)->group(function () {
+    Route::get('user-profile', 'profile');
+});
+
+Route::controller(\Config\SecurityController::class)->group(function () {
+    Route::post('auth', 'userAuth');
+    Route::post('logout', 'logout');
+    Route::get('/access/page-verification', 'PageVerified');
+    Route::get('/access/page-authorization', 'PageAuthorization');
+});
 
 Route::middleware('appauth')->group(function () {
     Route::post('lock', 'Config\UserController@lock');
@@ -45,8 +56,8 @@ Route::group(['prefix' => 'setup','middleware'=>'appauth'], function () {
         Route::get('/class/list', 'openlist');
     });
     Route::controller(\Setup\DepartmentController::class)->group(function () {
-        Route::get('/department', 'index');
-        Route::get('/department/get', 'edit');
+        Route::get('/department', 'show');
+        Route::get('/department/get', 'get');
         Route::delete('/department', 'destroy');
         Route::post('/department', 'store');
     });

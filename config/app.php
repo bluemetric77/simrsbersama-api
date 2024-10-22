@@ -233,7 +233,7 @@ return [
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
         'PDF' => Barryvdh\DomPDF\Facade::class,
-        'PagesHelp' => App\Helpers\Pages::class,
+        'Helpers' => App\Helpers\Pages::class,
         'Accounting' => App\Helpers\Accounting::class,
         'AutoJurnal' => App\Helpers\AutoJurnal::class,
         'HelpersInventory' => App\Helpers\HelpersInventory::class,

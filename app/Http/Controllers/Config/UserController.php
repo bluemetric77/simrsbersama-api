@@ -10,7 +10,7 @@ use App\Models\Config\UserObjects;
 use App\Models\Config\UserReports;
 use App\Models\Config\Objects;
 use App\Models\Config\Reports;
-use PagesHelp;
+use Helpers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
@@ -64,7 +64,7 @@ class UserController extends Controller
            ->where('sysid',$data->user_sysid)
            ->first();
            if ($data){
-                $server=PagesHelp::my_server_url();
+                $server=Helpers::ServerUrl();
                 $data['photo']=$server.'/'.$data['photo'];
                 $data['sign']=$server.'/'.$data['sign'];
            }
